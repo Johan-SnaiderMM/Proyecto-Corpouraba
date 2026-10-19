@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo:fotos": "node --env-file=.env scripts/subir-fotos-demo.mjs"
   },
   "dependencies": {
     "@fontsource-variable/montserrat": "^5.3.0",
@@ -17,5 +18,8 @@
   "devDependencies": {
     "vite": "^5.4.0",
     "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.6"
   }
 }

@@ -1,0 +1,67 @@
+# Pruebas automáticas: se ejecutan en cada subida (push) y en cada pull request.
+# Si algo falla, GitHub marca la subida con una X roja y deja el detalle en la pestaña "Actions".
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (pruebas y build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pruebas (ticket, validación y captcha)
+        run: npm test
+
+      - name: Build de producción
+        run: npm run build
+        env:
+          # Valores de relleno: el build solo necesita que existan, no se conecta a nada.
+          VITE_SUPABASE_URL: https://ejemplo.supabase.co
+          VITE_SUPABASE_ANON_KEY: clave-de-relleno
+
+  base-de-datos:
+    name: Base de datos (SQL de Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probar schema, seguimiento, datos de demostración y captcha
+        run: bash supabase/tests/ejecutar.sh

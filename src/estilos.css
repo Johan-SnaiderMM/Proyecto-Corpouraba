@@ -280,8 +280,10 @@ h3 {
   margin: 32px auto 0;
 }
 
-main:focus {
+main:focus,
+[tabindex='-1']:focus:not(button, input, a) {
   outline: none;
+  box-shadow: none;
 }
 
 .tarjeta > h1:first-child,
@@ -414,6 +416,11 @@ button.secundario:hover {
   margin: 12px 0 0;
   color: var(--error);
   font-weight: 700;
+}
+
+.captcha {
+  min-height: 90px;
+  margin-top: 16px;
 }
 
 .trampa {

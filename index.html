@@ -70,6 +70,12 @@
             <input id="sitio_web" name="sitio_web" type="text" tabindex="-1" autocomplete="off" />
           </div>
 
+          <!-- Captcha opcional: solo se muestra si hay VITE_TURNSTILE_SITE_KEY (ver README) -->
+          <div id="captcha-bloque" class="captcha" hidden>
+            <p class="ayuda">Verificación de seguridad</p>
+            <div id="captcha"></div>
+          </div>
+
           <p id="errores" class="error" role="alert" hidden></p>
           <button type="submit" id="btn-enviar">Enviar reporte</button>
         </form>
@@ -79,6 +85,9 @@
           <p>
             Este es su ticket de seguimiento. Guárdelo: con él podrá ver cómo avanza su reporte, la evidencia de lo
             que haga la Corporación y confirmar si la acción se cumplió.
+          </p>
+          <p id="aviso-foto" class="aviso" role="status" hidden>
+            Su reporte se envió, pero no se pudo subir la foto. Puede enviar otro reporte con la foto si lo necesita.
           </p>
           <p id="codigo" class="codigo"></p>
           <div class="ticket-acciones">

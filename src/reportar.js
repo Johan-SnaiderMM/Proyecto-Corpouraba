@@ -3,10 +3,42 @@ import { crearMapa, pedirUbicacion, selectorDePunto } from './mapa.js';
 import { comprimirFoto } from './foto.js';
 import { validarReporte } from './validar.js';
 import { copiar, enlaceDeSeguimiento, formatearCodigo } from './ticket.js';
+import { captchaActivo, montarCaptcha } from './captcha.js';
 
 const ESPERA_ENTRE_ENVIOS_MS = 30_000;
 
-// Sube la foto (si hay) y crea el reporte. Devuelve el código de seguimiento.
+// Con captcha: el servidor verifica el token, crea el reporte y entrega un permiso para subir la foto.
+// Devuelve el código y si la foto pudo subirse (el reporte ya existe aunque la foto falle).
+async function enviarConCaptcha({ tipo, descripcion, lat, lng, archivoFoto, token }) {
+  const respuesta = await fetch('/api/crear-reporte', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo, descripcion, lat, lng, conFoto: Boolean(archivoFoto), token }),
+  });
+  const datos = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) {
+    const error = new Error(datos.error ?? `HTTP ${respuesta.status}`);
+    error.motivo = datos.error;
+    throw error;
+  }
+
+  let fotoSubida = true;
+  if (datos.subida) {
+    try {
+      const blob = await comprimirFoto(archivoFoto);
+      const { error } = await supabase.storage
+        .from('report-photos')
+        .uploadToSignedUrl(datos.subida.ruta, datos.subida.token, blob, { contentType: 'image/jpeg' });
+      if (error) throw error;
+    } catch (error) {
+      console.error(error);
+      fotoSubida = false;
+    }
+  }
+  return { codigo: datos.codigo, fotoSubida };
+}
+
+// Sin captcha: sube la foto (si hay) y crea el reporte directamente.
 async function enviarReporte({ tipo, descripcion, lat, lng, archivoFoto }) {
   let rutaFoto = null;
 
@@ -27,7 +59,7 @@ async function enviarReporte({ tipo, descripcion, lat, lng, archivoFoto }) {
     p_photo_path: rutaFoto,
   });
   if (error) throw error;
-  return codigo;
+  return { codigo, fotoSubida: true };
 }
 
 const $ = (id) => document.getElementById(id);
@@ -36,6 +68,26 @@ const bloqueErrores = $('errores');
 const botonEnviar = $('btn-enviar');
 
 let punto = null;
+
+// Captcha opcional: solo existe si hay VITE_TURNSTILE_SITE_KEY. El token sirve una sola vez.
+let tokenCaptcha = null;
+let captcha = null;
+if (captchaActivo) {
+  $('captcha-bloque').hidden = false;
+  montarCaptcha($('captcha'), (token) => {
+    tokenCaptcha = token;
+  })
+    .then((c) => {
+      captcha = c;
+    })
+    .catch(() => mostrarErrores(['No se pudo cargar la verificación de seguridad. Recargue la página.']));
+}
+
+const MENSAJES_CAPTCHA = {
+  captcha_requerido: 'Complete la verificación de seguridad.',
+  captcha_invalido: 'La verificación de seguridad venció o no es válida. Complétela de nuevo e inténtelo otra vez.',
+  captcha_no_disponible: 'No se pudo verificar la seguridad en este momento. Inténtelo en unos segundos.',
+};
 
 const mapa = crearMapa('mapa');
 const selector = selectorDePunto(mapa, (p) => {
@@ -90,22 +142,32 @@ formulario.addEventListener('submit', async (evento) => {
     return;
   }
 
+  if (captchaActivo && !tokenCaptcha) {
+    mostrarErrores([MENSAJES_CAPTCHA.captcha_requerido]);
+    return;
+  }
+
   botonEnviar.disabled = true;
   botonEnviar.textContent = 'Enviando…';
   try {
-    const codigo = await enviarReporte({
+    const datos = {
       tipo: $('tipo').value,
       descripcion: $('descripcion').value.trim(),
       lat: punto.lat,
       lng: punto.lng,
       archivoFoto,
-    });
+    };
+    const { codigo, fotoSubida } = captchaActivo
+      ? await enviarConCaptcha({ ...datos, token: tokenCaptcha })
+      : await enviarReporte(datos);
     localStorage.setItem('ultimoEnvio', String(Date.now()));
-    mostrarResultado(codigo);
+    mostrarResultado(codigo, { fotoSubida });
   } catch (error) {
     console.error(error);
-    mostrarErrores(['No se pudo enviar el reporte. Revise su conexión e inténtelo de nuevo.']);
+    mostrarErrores([MENSAJES_CAPTCHA[error.motivo] ?? 'No se pudo enviar el reporte. Revise su conexión e inténtelo de nuevo.']);
   } finally {
+    // Cada token de captcha sirve una sola vez, haya salido bien o mal el envío.
+    captcha?.reiniciar();
     botonEnviar.disabled = false;
     botonEnviar.textContent = 'Enviar reporte';
   }
@@ -113,8 +175,9 @@ formulario.addEventListener('submit', async (evento) => {
 
 let codigoEnviado = '';
 
-function mostrarResultado(codigo) {
+function mostrarResultado(codigo, { fotoSubida = true } = {}) {
   codigoEnviado = codigo;
+  $('aviso-foto').hidden = fotoSubida;
   $('codigo').textContent = formatearCodigo(codigo);
   $('enlace-seguimiento').href = `/seguimiento.html#codigo=${encodeURIComponent(codigo)}`;
   $('copiado').textContent = '';

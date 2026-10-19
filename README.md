@@ -1,5 +1,7 @@
 # Reporte ambiental (prototipo)
 
+![Pruebas](https://github.com/Johan-SnaiderMM/Proyecto-Corpouraba/actions/workflows/ci.yml/badge.svg)
+
 Prototipo web para que cualquier persona reporte una afectación ambiental desde el celular, con foto y ubicación, y para que un funcionario la gestione en un mapa. Funciona solo con datos de prueba y herramientas gratuitas: Vite, Leaflet y Supabase.
 
 Páginas:
@@ -68,8 +70,69 @@ El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
 - **Logo** (`public/img/`): se tomó del manual, sin deformarlo ni recolorearlo. Va sobre fondo blanco en el encabezado, en su versión blanca sobre el verde del pie (abajo a la derecha, como indica el manual) y con 50 px de alto como mínimo en pantalla. `curvas.svg` es un dibujo propio que imita las "curvas en degradé azul y verde" del manual.
 - **Pendiente de confirmar con CORPOURABA:** que se pueda usar su nombre y su logo en este prototipo. Mientras tanto, todas las páginas dicen que es un prototipo de práctica y no un canal oficial, y el pie remite a los canales reales (PBX, correo y sitio web del manual).
 
+## Datos de demostración
+
+Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, después de haber registrado a una funcionaria en `staff`:
+
+1. Ejecute `supabase/demo.sql` en el SQL Editor de Supabase. Se puede repetir: borra y vuelve a crear los reportes DEMO.
+2. Suba las fotos de evidencia (son 7 imágenes de ejemplo, rotuladas "IMAGEN DE EJEMPLO"):
+
+   ```bash
+   npm run demo:fotos
+   ```
+
+   Pide el correo y la contraseña de la funcionaria (la misma del panel) y usa la clave `anon` del `.env`: no necesita la clave `service_role`. Requiere Node 20.6 o más nuevo.
+
+Tickets para la demostración (se escriben con o sin guiones):
+
+| Ticket | Qué muestra |
+| --- | --- |
+| `DEMO-0001-VALI-DADO` | Atendido y validado como conforme por la persona |
+| `DEMO-0002-PORV-ALID` | Atendido, **esperando la validación**: úselo para validar en vivo |
+| `DEMO-0003-REAB-IERT` | La persona dijo "no conforme"; el caso volvió a revisión y hubo una segunda visita |
+| `DEMO-0004-RECI-BIDO` | Recién recibido |
+| `DEMO-0005-DESC-ARTA` | Descartado |
+| `DEMO-0006-REVI-SION` | En revisión, con una evidencia |
+
+Para quitarlos: `delete from reports where tracking_code like 'DEMO%';` (las fotos quedan en Storage, en `report-evidence`; bórrelas desde el panel de Supabase si lo desea). Sus códigos son fáciles de adivinar a propósito: no los use en un proyecto con datos reales.
+
+## Pruebas automáticas
+
+| Qué | Cómo | Qué comprueba |
+| --- | --- | --- |
+| Web | `npm test` y `npm run build` | Ticket, validaciones del formulario, lógica del captcha y que el sitio compile |
+| Base de datos | `bash supabase/tests/ejecutar.sh` | Carga el SQL en un Postgres de verdad y comprueba permisos (RLS), que no se filtren notas internas, la validación del ciudadano, los datos de demostración y el captcha |
+
+En GitHub se ejecutan solas en cada subida (`.github/workflows/ci.yml`): el resultado se ve en la pestaña **Actions** y como marca verde o X roja junto a cada commit. Para correr las de la base de datos en su computador hace falta `psql` y un Postgres 14 o más nuevo (las variables `PGHOST`, `PGUSER`, etc. indican a cuál conectarse).
+
+## Captcha (opcional)
+
+Protege el envío de reportes contra robots con [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) (gratuito). Es un módulo **independiente**: sin configurarlo, el formulario funciona igual que antes.
+
+Cómo funciona: con el captcha activo, el formulario ya no llama a Supabase para crear el reporte; envía los datos y el token del captcha a la función `api/crear-reporte.js` (en Vercel), que verifica el token con Cloudflare y recién entonces crea el reporte. Para que un robot no pueda saltarse la página, `supabase/captcha.sql` cierra la puerta directa.
+
+**Activarlo** (en este orden):
+
+1. En Cloudflare (Turnstile > Add site) cree un sitio con el dominio de Vercel. Copie la *Site key* y la *Secret key*.
+2. En Vercel (Settings > Environment Variables) agregue:
+   - `VITE_TURNSTILE_SITE_KEY`: la Site key (es pública).
+   - `TURNSTILE_SECRET_KEY`: la Secret key.
+   - `SUPABASE_SERVICE_ROLE_KEY`: la clave `service_role` (Supabase > Project Settings > API). **Es la llave maestra de la base de datos: solo va en Vercel, nunca en el repositorio ni en una variable que empiece por `VITE_`.**
+   - Opcional: `TURNSTILE_HOSTNAME` con el dominio, para rechazar tokens creados en otro sitio.
+
+   Vuelva a desplegar.
+3. Compruebe en el sitio publicado que se puede enviar un reporte (incluida una foto).
+4. Ejecute `supabase/captcha.sql` en el SQL Editor de Supabase.
+
+**Desactivarlo:** ejecute `supabase/captcha-desactivar.sql`, quite `VITE_TURNSTILE_SITE_KEY` en Vercel y vuelva a desplegar. Ambos SQL se pueden repetir sin problema.
+
+**Probarlo con las claves de prueba de Cloudflare** (siempre aprueban): Site key `1x00000000000000000000AA` y Secret key `1x0000000000000000000000000000000AA`. La función `api/` no corre con `npm run dev`; para probar el flujo completo en su computador use `npx vercel dev`.
+
+Límites: el captcha protege la creación de reportes. No limita cuántas veces se consulta un ticket (eso lo protege el tamaño del código) ni reemplaza un límite de peticiones por IP, que se configura aparte en Vercel Firewall.
+
 ## Seguridad en pocas líneas
 
+- Con el captcha activo, `create_report` solo lo puede llamar la función del servidor (`service_role`); sin captcha, cualquiera con la clave `anon` puede crear reportes.
 - La clave `anon` es pública por diseño. **Nunca** uses la clave `service_role` en este código ni la subas a GitHub.
 - Las tablas tienen RLS: solo los funcionarios (tabla `staff`) las leen. El ciudadano solo llama a `create_report`, `get_report_tracking` y `validate_report`, y sube fotos de su reporte a un bucket privado.
 - El ticket es la única llave para ver un reporte y responder su validación, por eso los códigos nuevos tienen 16 caracteres al azar (64 bits). Supabase no limita por sí solo los intentos a las funciones: si el sistema llegara a usarse de verdad, hay que agregar un límite de peticiones (por ejemplo, en Vercel Firewall).
