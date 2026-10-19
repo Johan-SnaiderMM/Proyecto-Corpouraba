@@ -111,6 +111,10 @@
           <h3>Historial</h3>
           <ul id="d-historial" class="historial"></ul>
 
+          <h3>Evidencia registrada</h3>
+          <ul id="d-evidencias" class="evidencias"></ul>
+          <p id="d-sin-evidencias" class="ayuda" hidden>Aún no se ha registrado evidencia.</p>
+
           <h3>Cambiar estado</h3>
           <form id="form-estado" novalidate>
             <label for="n-estado">Nuevo estado</label>
@@ -120,12 +124,27 @@
               <option value="atendido">Atendido</option>
               <option value="descartado">Descartado</option>
             </select>
-            <label for="n-nota">Nota interna</label>
+            <label for="n-nota">Nota interna (no la ve el ciudadano)</label>
             <textarea id="n-nota" rows="2" maxlength="500"></textarea>
             <label for="n-publica">Nota para el ciudadano (opcional)</label>
+            <p class="ayuda">Aparece en la línea de tiempo del ticket.</p>
             <input id="n-publica" type="text" maxlength="300" />
             <p id="error-estado" class="error" role="alert" hidden></p>
             <button type="submit">Guardar cambio</button>
+          </form>
+
+          <h3>Registrar una acción con evidencia</h3>
+          <p class="ayuda">
+            La descripción y la foto las verá quien reportó, con su ticket. No suba fotos con rostros ni datos personales.
+          </p>
+          <form id="form-accion" novalidate>
+            <label for="a-descripcion">Qué se hizo</label>
+            <textarea id="a-descripcion" rows="2" maxlength="300" required
+              placeholder="Por ejemplo: visita técnica al sitio y apertura del proceso sancionatorio"></textarea>
+            <label for="a-foto">Foto de evidencia</label>
+            <input id="a-foto" type="file" accept="image/*" required />
+            <p id="error-accion" class="error" role="alert" hidden></p>
+            <button type="submit" id="btn-accion">Registrar acción</button>
           </form>
         </section>
       </section>

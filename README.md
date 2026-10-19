@@ -7,8 +7,23 @@ Páginas:
 | Página | Archivo | Quién la usa |
 | --- | --- | --- |
 | `/` | `index.html` | Ciudadano: enviar un reporte |
-| `/seguimiento.html` | `seguimiento.html` | Ciudadano: consultar el estado con su código |
-| `/panel/` | `panel/index.html` | Funcionario: lista, mapa, filtros, cambio de estado, CSV |
+| `/seguimiento.html` | `seguimiento.html` | Ciudadano: ver su ticket (avance, evidencia de la Corporación) y validar si la acción se cumplió |
+| `/panel/` | `panel/index.html` | Funcionario: lista, mapa, filtros, cambio de estado, evidencia con foto, CSV |
+
+## Ticket, evidencia y validación
+
+Al enviar un reporte, la persona recibe un **ticket** (por ejemplo `A65E-D099-1E33`) y un enlace directo. Con él puede ver:
+
+- **El avance** en cuatro pasos: Recibido, En revisión, Atendido y Validado por la persona.
+- **La evidencia** que sube la Corporación: cada acción registrada en el panel con su foto y su descripción.
+- **Solo lo público.** Las notas internas del funcionario nunca salen de la base; el ciudadano ve únicamente la "nota para el ciudadano".
+
+Cuando el caso queda en *Atendido*, la persona puede responder si la acción se cumplió:
+
+- **Sí, se cumplió**: el caso queda como validado.
+- **No, el problema continúa**: el caso vuelve a *En revisión* y el funcionario lo ve en el historial como "Ciudadano · …".
+
+Solo se puede responder una vez por cada vez que el caso se marca como atendido.
 
 ## Puesta en marcha
 
@@ -20,7 +35,7 @@ Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.
    npm install
    ```
 
-2. Crear un proyecto en [Supabase](https://supabase.com). En **SQL Editor** pegar y ejecutar `supabase/schema.sql` y después `supabase/seed.sql`.
+2. Crear un proyecto en [Supabase](https://supabase.com). En **SQL Editor** pegar y ejecutar, en este orden, `supabase/schema.sql`, `supabase/seed.sql` y `supabase/seguimiento.sql` (esta última agrega el ticket, la evidencia y la validación; se puede ejecutar más de una vez sin problema).
 3. En **Authentication**:
    - Desactivar el registro público de usuarios (Providers > Email > desactivar "Allow new users to sign up").
    - Crear un usuario (Users > Add user) con correo y contraseña.
@@ -42,12 +57,14 @@ Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.
    npm run dev
    ```
 
-Otros comandos: `npm test` (pruebas de validación), `npm run build` (versión para publicar, en `dist/`).
+Otros comandos: `npm test` (pruebas de validación y del ticket), `npm run build` (versión para publicar, en `dist/`).
 
 ## Seguridad en pocas líneas
 
 - La clave `anon` es pública por diseño. **Nunca** uses la clave `service_role` en este código ni la subas a GitHub.
-- Las tablas tienen RLS: solo los funcionarios (tabla `staff`) las leen. El ciudadano solo llama a `create_report` y `get_report_status` y sube fotos a un bucket privado.
+- Las tablas tienen RLS: solo los funcionarios (tabla `staff`) las leen. El ciudadano solo llama a `create_report`, `get_report_tracking` y `validate_report`, y sube fotos de su reporte a un bucket privado.
+- Los códigos de ticket nuevos tienen 12 caracteres, porque el código también permite responder la validación. Los de 8 de los datos de prueba siguen funcionando.
+- Las fotos de evidencia de la Corporación están en el bucket `report-evidence`, de lectura pública pero sin listado y con nombres aleatorios: solo se llega a una foto con su enlace exacto. No subas fotos con rostros ni datos personales.
 - Todo texto escrito por ciudadanos se muestra con `textContent`, nunca con `innerHTML`.
 - Las fotos se recomprimen en el celular, lo que borra su ubicación EXIF.
 - El formulario no pide nombre ni cédula y avisa que se use solo con datos de prueba.

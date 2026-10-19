@@ -289,3 +289,186 @@ tbody tr.activa {
   margin-top: 12px;
   border-radius: 8px;
 }
+
+/* ---------- Ticket, avance y evidencia ---------- */
+
+.ticket {
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.ticket-etiqueta {
+  margin: 0 0 8px;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ticket .codigo {
+  margin: 0;
+}
+
+.ticket-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pasos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 20px;
+  list-style: none;
+}
+
+.paso {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px solid var(--borde);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.paso-nombre {
+  font-weight: 600;
+}
+
+.paso-detalle {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.paso-hecho {
+  border-color: #15803d;
+  background: #eaf6ee;
+}
+
+.paso-actual {
+  border-color: var(--verde);
+  background: #e4efef;
+}
+
+.paso-pendiente {
+  opacity: 0.75;
+}
+
+.linea {
+  position: relative;
+  padding: 0 0 0 22px;
+  margin: 0;
+  list-style: none;
+  border-left: 3px solid var(--borde);
+}
+
+.linea-item {
+  position: relative;
+  padding: 0 0 20px 14px;
+}
+
+.linea-item::before {
+  position: absolute;
+  top: 6px;
+  left: -31px;
+  width: 14px;
+  height: 14px;
+  content: '';
+  background: var(--verde);
+  border: 3px solid var(--fondo);
+  border-radius: 50%;
+}
+
+.linea-evidencia::before {
+  background: #15803d;
+}
+
+.linea-fecha {
+  display: block;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.linea-titulo {
+  display: block;
+}
+
+.linea-texto {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.linea-foto img {
+  display: block;
+  max-width: min(100%, 360px);
+  max-height: 260px;
+  margin-top: 8px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.validacion {
+  margin-top: 24px;
+  padding: 16px;
+  background: #fdf3dc;
+  border: 1px solid #e6a93a;
+  border-radius: 12px;
+}
+
+fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+label.opcion {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  font-weight: 400;
+}
+
+label.opcion input {
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
+.evidencias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.evidencias img {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.evidencias p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}

@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { crearMapa, crearCapa, dibujarReportes, enfocar } from './mapa.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
+import { comprimirFoto } from './foto.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -169,13 +170,24 @@ async function elegir(id) {
   mostrarError('error-estado', '');
   $('d-foto').replaceChildren();
   $('d-historial').replaceChildren();
+  $('d-evidencias').replaceChildren();
+  $('d-sin-evidencias').hidden = true;
+  $('a-descripcion').value = '';
+  $('a-foto').value = '';
+  mostrarError('error-accion', '');
   $('detalle').hidden = false;
   $('detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  const [foto, historial] = await Promise.all([cargarFoto(reporte), cargarHistorial(reporte)]);
+  const [foto, historial, evidencias] = await Promise.all([
+    cargarFoto(reporte),
+    cargarHistorial(reporte),
+    cargarEvidencias(reporte),
+  ]);
   if (activoId !== id) return; // el funcionario ya eligió otro reporte
   if (foto) $('d-foto').append(foto);
   $('d-historial').replaceChildren(...historial);
+  $('d-evidencias').replaceChildren(...evidencias);
+  $('d-sin-evidencias').hidden = evidencias.length > 0;
 }
 
 async function cargarFoto(reporte) {
@@ -196,13 +208,36 @@ async function cargarFoto(reporte) {
 async function cargarHistorial(reporte) {
   const { data, error } = await supabase
     .from('report_events')
-    .select('status, note, created_at')
+    .select('status, note, kind, created_at')
     .eq('report_id', reporte.id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true });
   if (error) return [];
   return data.map((evento) => {
     const item = document.createElement('li');
-    item.textContent = `${fecha(evento.created_at)} · ${ESTADOS[evento.status]}${evento.note ? ` — ${evento.note}` : ''}`;
+    const quien = evento.kind === 'validacion' ? 'Ciudadano · ' : '';
+    item.textContent = `${fecha(evento.created_at)} · ${quien}${ESTADOS[evento.status]}${evento.note ? ` — ${evento.note}` : ''}`;
+    return item;
+  });
+}
+
+// Evidencia que la Corporación ya registró. El bucket es de lectura pública, así que basta la URL pública.
+async function cargarEvidencias(reporte) {
+  const { data, error } = await supabase
+    .from('report_evidence')
+    .select('storage_path, caption, created_at')
+    .eq('report_id', reporte.id)
+    .order('created_at', { ascending: true });
+  if (error) return [];
+  return data.map((evidencia) => {
+    const item = document.createElement('li');
+    const imagen = document.createElement('img');
+    imagen.src = supabase.storage.from('report-evidence').getPublicUrl(evidencia.storage_path).data.publicUrl;
+    imagen.alt = `Evidencia: ${evidencia.caption}`;
+    imagen.loading = 'lazy';
+    const texto = document.createElement('p');
+    texto.textContent = `${fecha(evidencia.created_at)} · ${evidencia.caption}`;
+    item.append(imagen, texto);
     return item;
   });
 }
@@ -226,6 +261,49 @@ $('form-estado').addEventListener('submit', async (evento) => {
 
   const id = activoId;
   await cargarReportes();
+  await elegir(id);
+});
+
+$('form-accion').addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  mostrarError('error-accion', '');
+  if (!activoId) return;
+
+  const descripcion = $('a-descripcion').value.trim();
+  const archivo = $('a-foto').files[0] ?? null;
+  if (descripcion.length < 3) {
+    mostrarError('error-accion', 'Describa la acción (mínimo 3 caracteres).');
+    return;
+  }
+  if (!archivo || !archivo.type.startsWith('image/')) {
+    mostrarError('error-accion', 'Elija una foto de evidencia.');
+    return;
+  }
+
+  const id = activoId;
+  const boton = $('btn-accion');
+  boton.disabled = true;
+  boton.textContent = 'Registrando…';
+  try {
+    // Al recomprimir la foto se borran sus datos EXIF (por ejemplo, la ubicación del celular).
+    const blob = await comprimirFoto(archivo);
+    const ruta = `${id}/${crypto.randomUUID()}.jpg`;
+    const { error: errorSubida } = await supabase.storage
+      .from('report-evidence')
+      .upload(ruta, blob, { contentType: 'image/jpeg' });
+    if (errorSubida) throw errorSubida;
+
+    const { error } = await supabase.rpc('add_evidence', { p_report: id, p_path: ruta, p_caption: descripcion });
+    if (error) throw error;
+  } catch (error) {
+    console.error(error);
+    mostrarError('error-accion', 'No se pudo registrar la acción. Inténtelo de nuevo.');
+    return;
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Registrar acción';
+  }
+
   await elegir(id);
 });
 

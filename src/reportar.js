@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { crearMapa, pedirUbicacion, selectorDePunto } from './mapa.js';
 import { comprimirFoto } from './foto.js';
 import { validarReporte } from './validar.js';
+import { copiar, formatearCodigo } from './ticket.js';
 
 const ESPERA_ENTRE_ENVIOS_MS = 30_000;
 
@@ -78,7 +79,7 @@ formulario.addEventListener('submit', async (evento) => {
 
   // Campo trampa: solo un bot lo llena. Se simula un éxito sin enviar nada.
   if ($('sitio_web').value !== '') {
-    mostrarResultado('XXXXXXXX');
+    mostrarResultado('XXXXXXXXXXXX');
     return;
   }
 
@@ -110,11 +111,25 @@ formulario.addEventListener('submit', async (evento) => {
   }
 });
 
+let codigoEnviado = '';
+
 function mostrarResultado(codigo) {
-  $('codigo').textContent = codigo;
+  codigoEnviado = codigo;
+  $('codigo').textContent = formatearCodigo(codigo);
+  $('enlace-seguimiento').href = `/seguimiento.html?codigo=${encodeURIComponent(codigo)}`;
+  $('copiado').textContent = '';
   formulario.hidden = true;
   $('resultado').hidden = false;
 }
+
+async function copiarYAvisar(texto, descripcion) {
+  $('copiado').textContent = (await copiar(texto)) ? `${descripcion} copiado.` : 'No se pudo copiar. Selecciónelo y cópielo a mano.';
+}
+
+$('btn-copiar-codigo').addEventListener('click', () => copiarYAvisar(formatearCodigo(codigoEnviado), 'Código'));
+$('btn-copiar-enlace').addEventListener('click', () =>
+  copiarYAvisar(`${location.origin}/seguimiento.html?codigo=${encodeURIComponent(codigoEnviado)}`, 'Enlace')
+);
 
 $('btn-otro').addEventListener('click', () => {
   formulario.reset();

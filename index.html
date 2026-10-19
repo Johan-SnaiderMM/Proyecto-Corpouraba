@@ -58,9 +58,17 @@
 
       <section id="resultado" class="resultado" hidden aria-live="polite">
         <h2>Reporte enviado</h2>
-        <p>Guarda este código para consultar el estado de tu reporte:</p>
+        <p>
+          Este es su ticket de seguimiento. Guárdelo: con él podrá ver cómo avanza su reporte, la evidencia de lo que
+          haga la Corporación y confirmar si la acción se cumplió.
+        </p>
         <p id="codigo" class="codigo"></p>
-        <p><a href="/seguimiento.html">Ir a consultar un reporte</a></p>
+        <div class="ticket-acciones">
+          <button type="button" id="btn-copiar-codigo" class="secundario">Copiar código</button>
+          <button type="button" id="btn-copiar-enlace" class="secundario">Copiar enlace</button>
+        </div>
+        <p id="copiado" class="ayuda" role="status"></p>
+        <p><a id="enlace-seguimiento" href="/seguimiento.html">Ver el seguimiento de mi reporte</a></p>
         <button type="button" id="btn-otro" class="secundario">Enviar otro reporte</button>
       </section>
     </main>

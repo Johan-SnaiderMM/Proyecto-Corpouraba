@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0b6e77" />
+    <!-- El enlace lleva el código del ticket: no se envía a otros sitios (por ejemplo, al cargar las fotos). -->
+    <meta name="referrer" content="no-referrer" />
     <title>Consultar un reporte</title>
     <link rel="stylesheet" href="/src/estilos.css" />
   </head>
@@ -17,18 +19,29 @@
 
     <main class="contenedor">
       <h1>Consultar un reporte</h1>
-      <p class="ayuda">Escribe el código que recibiste al enviar tu reporte.</p>
+      <p class="ayuda">Escriba el código del ticket que recibió al enviar su reporte.</p>
 
       <form id="formulario" novalidate>
-        <label for="codigo">Código de seguimiento</label>
-        <input id="codigo" name="codigo" type="text" maxlength="16" autocomplete="off" required
-          placeholder="Por ejemplo, A1B2C3D4" />
+        <label for="codigo">Código del ticket</label>
+        <input id="codigo" name="codigo" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" required
+          placeholder="Por ejemplo, A65E-D099-1E33" />
         <p id="mensaje" class="error" role="alert" hidden></p>
         <button type="submit">Consultar</button>
       </form>
 
-      <section id="estado" class="resultado" hidden aria-live="polite">
-        <h2>Estado del reporte</h2>
+      <section id="estado" class="resultado" hidden>
+        <div class="ticket">
+          <p class="ticket-etiqueta">Ticket de seguimiento</p>
+          <p id="e-codigo" class="codigo"></p>
+          <div class="ticket-acciones">
+            <button type="button" id="btn-copiar-codigo" class="secundario">Copiar código</button>
+            <button type="button" id="btn-copiar-enlace" class="secundario">Copiar enlace</button>
+          </div>
+          <p id="copiado" class="ayuda" role="status"></p>
+        </div>
+
+        <ol id="e-pasos" class="pasos" aria-label="Avance del reporte"></ol>
+
         <dl>
           <dt>Tipo</dt>
           <dd id="e-tipo"></dd>
@@ -41,6 +54,30 @@
           <dt>Nota de la entidad</dt>
           <dd id="e-nota"></dd>
         </dl>
+
+        <h2>Avance y evidencia</h2>
+        <ol id="e-linea" class="linea"></ol>
+
+        <section id="validacion" class="validacion" hidden>
+          <h2>¿Se cumplió la acción?</h2>
+          <p class="ayuda">
+            La Corporación marcó su reporte como atendido. Revise la evidencia y cuéntenos si el problema quedó resuelto.
+          </p>
+          <form id="form-validacion" novalidate>
+            <fieldset>
+              <legend>Su respuesta</legend>
+              <label class="opcion"><input type="radio" name="veredicto" value="conforme" /> Sí, la acción se cumplió</label>
+              <label class="opcion"><input type="radio" name="veredicto" value="no_conforme" /> No, el problema continúa</label>
+            </fieldset>
+            <label for="v-comentario">Comentario (opcional)</label>
+            <textarea id="v-comentario" rows="3" maxlength="300"
+              placeholder="Si el problema continúa, cuéntenos qué sigue ocurriendo"></textarea>
+            <p id="error-validacion" class="error" role="alert" hidden></p>
+            <button type="submit" id="btn-validar">Enviar respuesta</button>
+          </form>
+        </section>
+
+        <p id="validacion-hecha" class="aviso" hidden></p>
       </section>
     </main>
 
