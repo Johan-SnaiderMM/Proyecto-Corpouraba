@@ -20,11 +20,13 @@ const PASOS = [
   ['validado', 'Validado por usted'],
 ];
 
-export function calcularPasos({ estado, validacion }) {
+export function calcularPasos({ estado, validacion, eventos = [] }) {
   if (estado === 'descartado') {
+    // "En revisión" solo cuenta si el caso realmente pasó por ahí.
+    const reviso = eventos.some((e) => e.estado === 'en_revision');
     return [
       { clave: 'recibido', nombre: ESTADOS.recibido, estado: 'hecho' },
-      { clave: 'en_revision', nombre: ESTADOS.en_revision, estado: 'hecho' },
+      ...(reviso ? [{ clave: 'en_revision', nombre: ESTADOS.en_revision, estado: 'hecho' }] : []),
       { clave: 'descartado', nombre: ESTADOS.descartado, estado: 'actual' },
     ];
   }
@@ -57,6 +59,17 @@ const TEXTO_POR_ESTADO = {
 // Texto de un cambio de estado: el que escribió el funcionario o, si no escribió nada, uno por defecto.
 export function textoEvento(evento) {
   return evento.nota || TEXTO_POR_ESTADO[evento.estado] || ESTADOS[evento.estado] || '';
+}
+
+// Lee el código del ticket del enlace. Se prefiere el fragmento (#codigo=...), que el navegador no envía al
+// servidor; también se acepta ?codigo=... por si hay enlaces anteriores.
+export function codigoDeEnlace(hash = '', search = '') {
+  const desdeHash = new URLSearchParams(hash.replace(/^#/, '')).get('codigo');
+  return desdeHash || new URLSearchParams(search).get('codigo') || '';
+}
+
+export function enlaceDeSeguimiento(origen, codigo) {
+  return `${origen}/seguimiento.html#codigo=${encodeURIComponent(normalizarCodigo(codigo))}`;
 }
 
 export async function copiar(texto) {

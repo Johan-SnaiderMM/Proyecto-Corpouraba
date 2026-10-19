@@ -50,7 +50,7 @@ body {
   min-height: 100vh;
   margin: 0;
   font-family: var(--fuente);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--texto);
   background: var(--fondo);
@@ -146,7 +146,10 @@ tr:focus-visible {
 }
 
 .encabezado nav a {
-  padding: 10px 2px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 2px;
   color: var(--azul);
   font-weight: 600;
   text-decoration: none;
@@ -435,7 +438,7 @@ button.secundario:hover {
 .codigo {
   display: inline-block;
   padding: 10px 16px;
-  font-size: clamp(1.1rem, 5.2vw, 2rem);
+  font-size: clamp(0.95rem, 4.4vw, 1.7rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
@@ -633,6 +636,39 @@ button.secundario:hover {
   overflow-wrap: anywhere;
 }
 
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.boton-enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.paso-descartado::before {
+  color: #ffffff;
+  content: '✕';
+  background: #4b5563;
+  border-color: #4b5563;
+  box-shadow: none;
+}
+
+.paso-descartado .paso-nombre {
+  color: var(--texto-suave);
+}
+
+.linea-foto {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .linea-foto img {
   display: block;
   max-width: min(100%, 380px);
@@ -670,7 +706,7 @@ dt {
 
 dd {
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .filtros {
@@ -846,6 +882,17 @@ tbody tr.activa {
     padding-top: 28px;
   }
 
+  /* En el panel, la fecha se oculta en pantallas angostas para que el código se vea completo */
+  th:first-child,
+  td:first-child {
+    display: none;
+  }
+
+  th,
+  td {
+    padding: 10px 8px;
+  }
+
   /* En pantallas angostas los pasos van en vertical */
   .pasos {
     grid-template-columns: 1fr;
@@ -882,6 +929,23 @@ tbody tr.activa {
 
   dd {
     margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .tarjeta,
+  .resultado {
+    padding: 14px;
+  }
+
+  .ticket {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .codigo {
+    padding: 8px 10px;
+    letter-spacing: 0.03em;
   }
 }
 

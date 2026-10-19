@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { armarLinea, calcularPasos, formatearCodigo, normalizarCodigo, textoEvento } from './ticket.js';
+import {
+  armarLinea,
+  calcularPasos,
+  codigoDeEnlace,
+  enlaceDeSeguimiento,
+  formatearCodigo,
+  normalizarCodigo,
+  textoEvento,
+} from './ticket.js';
 
 describe('código del ticket', () => {
   it('lo normaliza sin guiones, espacios ni minúsculas', () => {
@@ -9,6 +17,7 @@ describe('código del ticket', () => {
 
   it('lo agrupa de 4 en 4, también el código antiguo de 8 caracteres', () => {
     expect(formatearCodigo('A65ED0991E33')).toBe('A65E-D099-1E33');
+    expect(formatearCodigo('a65ed0991e33f00d')).toBe('A65E-D099-1E33-F00D');
     expect(formatearCodigo('a1b2c3d4')).toBe('A1B2-C3D4');
     expect(formatearCodigo('ABCDE')).toBe('ABCD-E');
     expect(formatearCodigo('')).toBe('');
@@ -36,10 +45,15 @@ describe('pasos del avance', () => {
     expect(estados(pasos)).toEqual(['hecho', 'actual', 'pendiente', 'pendiente']);
   });
 
-  it('descartado termina en su propio paso', () => {
-    const pasos = calcularPasos({ estado: 'descartado' });
-    expect(pasos.map((p) => p.clave)).toEqual(['recibido', 'en_revision', 'descartado']);
+  it('descartado sin haber pasado por revisión no muestra ese paso', () => {
+    const pasos = calcularPasos({ estado: 'descartado', eventos: [{ estado: 'recibido' }, { estado: 'descartado' }] });
+    expect(pasos.map((p) => p.clave)).toEqual(['recibido', 'descartado']);
     expect(pasos.at(-1).estado).toBe('actual');
+  });
+
+  it('descartado después de una revisión sí la muestra', () => {
+    const pasos = calcularPasos({ estado: 'descartado', eventos: [{ estado: 'en_revision' }] });
+    expect(pasos.map((p) => p.clave)).toEqual(['recibido', 'en_revision', 'descartado']);
   });
 });
 
@@ -67,5 +81,17 @@ describe('texto de un evento', () => {
 
   it('usa un texto por defecto si no hay nota', () => {
     expect(textoEvento({ estado: 'en_revision', nota: null })).toMatch(/revisando/);
+  });
+});
+
+describe('enlace del ticket', () => {
+  it('lee el código del fragmento y, si no hay, de la consulta', () => {
+    expect(codigoDeEnlace('#codigo=A65ED0991E330000', '')).toBe('A65ED0991E330000');
+    expect(codigoDeEnlace('', '?codigo=A65E')).toBe('A65E');
+    expect(codigoDeEnlace('', '')).toBe('');
+  });
+
+  it('arma un enlace con el código normalizado en el fragmento', () => {
+    expect(enlaceDeSeguimiento('https://ejemplo.co', 'a65e-d099-1e33')).toBe('https://ejemplo.co/seguimiento.html#codigo=A65ED0991E33');
   });
 });

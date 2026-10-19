@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { crearMapa, crearCapa, dibujarReportes, enfocar } from './mapa.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
 import { comprimirFoto } from './foto.js';
+import { formatearCodigo } from './ticket.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +15,20 @@ let activoId = null;
 
 // ---------- Sesión ----------
 
+// Borra todo lo de la sesión anterior (lista, detalle e historial con notas internas) al cerrar sesión.
+function limpiarPanel() {
+  activoId = null;
+  reportes = [];
+  visibles = [];
+  marcadores = new Map();
+  capa?.clearLayers();
+  $('detalle').hidden = true;
+  for (const id of ['filas', 'd-foto', 'd-historial', 'd-evidencias']) $(id).replaceChildren();
+  $('resumen').textContent = '';
+}
+
 function mostrarLogin(mensaje) {
+  limpiarPanel();
   $('vista-login').hidden = false;
   $('vista-panel').hidden = true;
   $('btn-salir').hidden = true;
@@ -122,9 +136,12 @@ function dibujarTabla() {
     const fila = document.createElement('tr');
     fila.dataset.id = r.id;
     fila.tabIndex = 0;
-    if (r.id === activoId) fila.classList.add('activa');
+    if (r.id === activoId) {
+      fila.classList.add('activa');
+      fila.setAttribute('aria-current', 'true');
+    }
 
-    for (const texto of [fecha(r.created_at), TIPOS[r.type], ESTADOS[r.status], r.tracking_code]) {
+    for (const texto of [fecha(r.created_at), TIPOS[r.type], ESTADOS[r.status], formatearCodigo(r.tracking_code)]) {
       const celda = document.createElement('td');
       celda.textContent = texto;
       fila.append(celda);
@@ -132,7 +149,10 @@ function dibujarTabla() {
 
     fila.addEventListener('click', () => elegir(r.id));
     fila.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') elegir(r.id);
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        elegir(r.id);
+      }
     });
     cuerpo.append(fila);
   }
@@ -153,12 +173,16 @@ async function elegir(id) {
   if (!reporte) return;
 
   document.querySelectorAll('#filas tr').forEach((fila) => {
-    fila.classList.toggle('activa', fila.dataset.id === id);
+    const activa = fila.dataset.id === id;
+    fila.classList.toggle('activa', activa);
+    if (activa) fila.setAttribute('aria-current', 'true');
+    else fila.removeAttribute('aria-current');
   });
+  restablecerBotones();
   enfocar(mapa, reporte.lat, reporte.lng);
   marcadores.get(id)?.openPopup();
 
-  $('d-codigo').textContent = reporte.tracking_code;
+  $('d-codigo').textContent = formatearCodigo(reporte.tracking_code);
   $('d-tipo').textContent = TIPOS[reporte.type];
   $('d-estado').textContent = ESTADOS[reporte.status];
   $('d-creado').textContent = fecha(reporte.created_at);
@@ -186,9 +210,33 @@ async function elegir(id) {
   ]);
   if (activoId !== id) return; // el funcionario ya eligió otro reporte
   if (foto) $('d-foto').append(foto);
-  $('d-historial').replaceChildren(...historial);
-  $('d-evidencias').replaceChildren(...evidencias);
-  $('d-sin-evidencias').hidden = evidencias.length > 0;
+
+  // Si una consulta falla se avisa: nunca se muestra "sin evidencia" cuando en realidad no se pudo cargar.
+  $('d-historial').replaceChildren(...(historial ?? [itemAviso('No se pudo cargar el historial.')]));
+  $('d-evidencias').replaceChildren(...(evidencias ?? [itemAviso('No se pudo cargar la evidencia.')]));
+  $('d-sin-evidencias').hidden = evidencias === null || evidencias.length > 0;
+}
+
+function itemAvisoTexto(texto) {
+  const parrafo = document.createElement('p');
+  parrafo.className = 'ayuda';
+  parrafo.textContent = texto;
+  return parrafo;
+}
+
+function itemAviso(texto) {
+  const item = document.createElement('li');
+  item.className = 'ayuda';
+  item.textContent = texto;
+  return item;
+}
+
+// Cada formulario bloquea su botón mientras guarda. Al cambiar de reporte se liberan los botones.
+function restablecerBotones() {
+  $('form-estado').querySelector('button[type="submit"]').disabled = false;
+  const accion = $('btn-accion');
+  accion.disabled = false;
+  accion.textContent = 'Registrar acción';
 }
 
 async function cargarFoto(reporte) {
@@ -213,7 +261,7 @@ async function cargarHistorial(reporte) {
     .eq('report_id', reporte.id)
     .order('created_at', { ascending: true })
     .order('id', { ascending: true });
-  if (error) return [];
+  if (error) return null;
   return data.map((evento) => {
     const item = document.createElement('li');
     const quien = evento.kind === 'validacion' ? 'Ciudadano · ' : '';
@@ -229,13 +277,14 @@ async function cargarEvidencias(reporte) {
     .select('storage_path, caption, created_at')
     .eq('report_id', reporte.id)
     .order('created_at', { ascending: true });
-  if (error) return [];
+  if (error) return null;
   return data.map((evidencia) => {
     const item = document.createElement('li');
     const imagen = document.createElement('img');
     imagen.src = supabase.storage.from('report-evidence').getPublicUrl(evidencia.storage_path).data.publicUrl;
     imagen.alt = `Evidencia: ${evidencia.caption}`;
     imagen.loading = 'lazy';
+    imagen.addEventListener('error', () => imagen.replaceWith(itemAvisoTexto('Foto no disponible.')));
     const texto = document.createElement('p');
     texto.textContent = `${fecha(evidencia.created_at)} · ${evidencia.caption}`;
     item.append(imagen, texto);
@@ -248,21 +297,29 @@ $('form-estado').addEventListener('submit', async (evento) => {
   mostrarError('error-estado', '');
   if (!activoId) return;
 
-  const { error } = await supabase.rpc('change_status', {
-    p_report: activoId,
-    p_status: $('n-estado').value,
-    p_note: $('n-nota').value.trim() || null,
-    p_public_note: $('n-publica').value.trim() || null,
-  });
-  if (error) {
-    console.error(error);
-    mostrarError('error-estado', 'No se pudo guardar el cambio.');
-    return;
-  }
-
+  // Se toma el reporte ANTES de esperar: si la persona cambia de reporte mientras se guarda, no se mezcla.
   const id = activoId;
-  await cargarReportes();
-  await elegir(id);
+  const boton = $('form-estado').querySelector('button[type="submit"]');
+  if (boton.disabled) return; // evita el doble clic
+  boton.disabled = true;
+  try {
+    const { error } = await supabase.rpc('change_status', {
+      p_report: id,
+      p_status: $('n-estado').value,
+      p_note: $('n-nota').value.trim() || null,
+      p_public_note: $('n-publica').value.trim() || null,
+    });
+    if (error) {
+      console.error(error);
+      if (activoId === id) mostrarError('error-estado', 'No se pudo guardar el cambio.');
+      return;
+    }
+
+    await cargarReportes();
+    if (activoId === id) await elegir(id);
+  } finally {
+    if (activoId === id) boton.disabled = false;
+  }
 });
 
 $('form-accion').addEventListener('submit', async (evento) => {
@@ -285,27 +342,35 @@ $('form-accion').addEventListener('submit', async (evento) => {
   const boton = $('btn-accion');
   boton.disabled = true;
   boton.textContent = 'Registrando…';
+  let ruta = null;
   try {
     // Al recomprimir la foto se borran sus datos EXIF (por ejemplo, la ubicación del celular).
     const blob = await comprimirFoto(archivo);
-    const ruta = `${id}/${crypto.randomUUID()}.jpg`;
+    ruta = `${id}/${crypto.randomUUID()}.jpg`;
     const { error: errorSubida } = await supabase.storage
       .from('report-evidence')
       .upload(ruta, blob, { contentType: 'image/jpeg' });
-    if (errorSubida) throw errorSubida;
+    if (errorSubida) {
+      ruta = null; // no llegó a subirse
+      throw errorSubida;
+    }
 
     const { error } = await supabase.rpc('add_evidence', { p_report: id, p_path: ruta, p_caption: descripcion });
     if (error) throw error;
   } catch (error) {
     console.error(error);
-    mostrarError('error-accion', 'No se pudo registrar la acción. Inténtelo de nuevo.');
+    // Si la foto llegó a subirse pero no se pudo registrar, se borra para no dejar archivos sueltos.
+    if (ruta) await supabase.storage.from('report-evidence').remove([ruta]).catch(() => {});
+    if (activoId === id) mostrarError('error-accion', 'No se pudo registrar la acción. Inténtelo de nuevo.');
     return;
   } finally {
-    boton.disabled = false;
-    boton.textContent = 'Registrar acción';
+    if (activoId === id) {
+      boton.disabled = false;
+      boton.textContent = 'Registrar acción';
+    }
   }
 
-  await elegir(id);
+  if (activoId === id) await elegir(id);
 });
 
 // ---------- Exportar a CSV ----------

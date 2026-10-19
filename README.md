@@ -12,7 +12,7 @@ Páginas:
 
 ## Ticket, evidencia y validación
 
-Al enviar un reporte, la persona recibe un **ticket** (por ejemplo `A65E-D099-1E33`) y un enlace directo. Con él puede ver:
+Al enviar un reporte, la persona recibe un **ticket** (por ejemplo `A65E-D099-1E33-F00D`) y un enlace directo. Con él puede ver:
 
 - **El avance** en cuatro pasos: Recibido, En revisión, Atendido y Validado por la persona.
 - **La evidencia** que sube la Corporación: cada acción registrada en el panel con su foto y su descripción.
@@ -23,7 +23,7 @@ Cuando el caso queda en *Atendido*, la persona puede responder si la acción se 
 - **Sí, se cumplió**: el caso queda como validado.
 - **No, el problema continúa**: el caso vuelve a *En revisión* y el funcionario lo ve en el historial como "Ciudadano · …".
 
-Solo se puede responder una vez por cada vez que el caso se marca como atendido.
+Solo se puede responder una vez por cada vez que el caso se marca como atendido. Si el funcionario vuelve a guardar el mismo estado con una nota, no se crea un cierre nuevo ni se pierde la respuesta de la persona.
 
 ## Puesta en marcha
 
@@ -72,7 +72,9 @@ El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
 
 - La clave `anon` es pública por diseño. **Nunca** uses la clave `service_role` en este código ni la subas a GitHub.
 - Las tablas tienen RLS: solo los funcionarios (tabla `staff`) las leen. El ciudadano solo llama a `create_report`, `get_report_tracking` y `validate_report`, y sube fotos de su reporte a un bucket privado.
-- Los códigos de ticket nuevos tienen 12 caracteres, porque el código también permite responder la validación. Los de 8 de los datos de prueba siguen funcionando.
+- El ticket es la única llave para ver un reporte y responder su validación, por eso los códigos nuevos tienen 16 caracteres al azar (64 bits). Supabase no limita por sí solo los intentos a las funciones: si el sistema llegara a usarse de verdad, hay que agregar un límite de peticiones (por ejemplo, en Vercel Firewall).
+- **`seed.sql` es solo para proyectos de prueba.** Si el proyecto llega a tener reportes reales, no lo ejecute. Los tickets de 8 caracteres de versiones anteriores se pueden calcular: bórrelos o regenérelos.
+- El enlace del ticket lleva el código después del `#` (no se envía al servidor ni queda en sus registros) y la página de seguimiento pide no ser indexada y no manda el `Referer`.
 - Las fotos de evidencia de la Corporación están en el bucket `report-evidence`, de lectura pública pero sin listado y con nombres aleatorios: solo se llega a una foto con su enlace exacto. No subas fotos con rostros ni datos personales.
 - Todo texto escrito por ciudadanos se muestra con `textContent`, nunca con `innerHTML`.
 - Las fotos se recomprimen en el celular, lo que borra su ubicación EXIF.

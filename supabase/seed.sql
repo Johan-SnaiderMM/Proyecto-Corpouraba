@@ -3,7 +3,7 @@
 --   delete from reports where description like 'Reporte de prueba%';
 
 insert into reports (tracking_code, type, description, lat, lng, status)
-select upper(substr(md5(i::text), 1, 8)),
+select upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8) || substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)),
        (array['tala', 'quema', 'vertimiento', 'fauna', 'residuos', 'otro'])[1 + (i % 6)]::report_type,
        'Reporte de prueba número ' || i,
        7.88 + (random() - 0.5) * 0.4,

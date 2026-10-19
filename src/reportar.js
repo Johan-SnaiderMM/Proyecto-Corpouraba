@@ -2,7 +2,7 @@ import { supabase } from './supabase.js';
 import { crearMapa, pedirUbicacion, selectorDePunto } from './mapa.js';
 import { comprimirFoto } from './foto.js';
 import { validarReporte } from './validar.js';
-import { copiar, formatearCodigo } from './ticket.js';
+import { copiar, enlaceDeSeguimiento, formatearCodigo } from './ticket.js';
 
 const ESPERA_ENTRE_ENVIOS_MS = 30_000;
 
@@ -116,10 +116,12 @@ let codigoEnviado = '';
 function mostrarResultado(codigo) {
   codigoEnviado = codigo;
   $('codigo').textContent = formatearCodigo(codigo);
-  $('enlace-seguimiento').href = `/seguimiento.html?codigo=${encodeURIComponent(codigo)}`;
+  $('enlace-seguimiento').href = `/seguimiento.html#codigo=${encodeURIComponent(codigo)}`;
   $('copiado').textContent = '';
   formulario.hidden = true;
   $('resultado').hidden = false;
+  // El ticket se entrega una sola vez: el foco pasa al título para que se anuncie y no se pierda.
+  $('titulo-resultado').focus();
 }
 
 async function copiarYAvisar(texto, descripcion) {
@@ -128,7 +130,7 @@ async function copiarYAvisar(texto, descripcion) {
 
 $('btn-copiar-codigo').addEventListener('click', () => copiarYAvisar(formatearCodigo(codigoEnviado), 'Código'));
 $('btn-copiar-enlace').addEventListener('click', () =>
-  copiarYAvisar(`${location.origin}/seguimiento.html?codigo=${encodeURIComponent(codigoEnviado)}`, 'Enlace')
+  copiarYAvisar(enlaceDeSeguimiento(location.origin, codigoEnviado), 'Enlace')
 );
 
 $('btn-otro').addEventListener('click', () => {
@@ -138,4 +140,5 @@ $('btn-otro').addEventListener('click', () => {
   $('resultado').hidden = true;
   formulario.hidden = false;
   mapa.invalidateSize();
+  $('tipo').focus();
 });

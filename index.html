@@ -74,8 +74,8 @@
           <button type="submit" id="btn-enviar">Enviar reporte</button>
         </form>
 
-        <section id="resultado" class="resultado" hidden aria-live="polite">
-          <h2>Reporte enviado</h2>
+        <section id="resultado" class="resultado" hidden>
+          <h2 id="titulo-resultado" tabindex="-1">Reporte enviado</h2>
           <p>
             Este es su ticket de seguimiento. Guárdelo: con él podrá ver cómo avanza su reporte, la evidencia de lo
             que haga la Corporación y confirmar si la acción se cumplió.
@@ -86,7 +86,7 @@
             <button type="button" id="btn-copiar-enlace" class="secundario">Copiar enlace</button>
           </div>
           <p id="copiado" class="ayuda" role="status"></p>
-          <p><a id="enlace-seguimiento" href="/seguimiento.html">Ver el seguimiento de mi reporte</a></p>
+          <p><a id="enlace-seguimiento" class="boton-enlace" href="/seguimiento.html">Ver el seguimiento de mi reporte</a></p>
           <button type="button" id="btn-otro" class="secundario">Enviar otro reporte</button>
         </section>
       </div>

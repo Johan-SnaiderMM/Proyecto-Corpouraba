@@ -6,7 +6,13 @@ import { COLOR_ESTADO, ESTADOS, TIPOS } from './etiquetas.js';
 export const CENTRO_INICIAL = [7.88, -76.63];
 
 export function crearMapa(idElemento, zoom = 11) {
-  const mapa = L.map(idElemento).setView(CENTRO_INICIAL, zoom);
+  // Con "reducir movimiento" activado en el dispositivo, el mapa no anima los zooms.
+  const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mapa = L.map(idElemento, {
+    zoomAnimation: !quieto,
+    fadeAnimation: !quieto,
+    markerZoomAnimation: !quieto,
+  }).setView(CENTRO_INICIAL, zoom);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap',

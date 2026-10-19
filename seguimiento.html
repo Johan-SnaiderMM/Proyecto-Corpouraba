@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#2d2f6e" />
     <!-- El enlace lleva el código del ticket: no se envía a otros sitios (por ejemplo, al cargar las fotos). -->
     <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
     <title>Consultar un reporte</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/src/estilos.css" />
@@ -39,13 +40,14 @@
       <div class="contenedor sobre-portada">
         <form id="formulario" class="tarjeta" novalidate>
           <label for="codigo">Código del ticket</label>
-          <input id="codigo" name="codigo" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" required
-            placeholder="Por ejemplo, A65E-D099-1E33" />
+          <input id="codigo" name="codigo" type="text" maxlength="24" autocomplete="off" autocapitalize="characters" required
+            aria-describedby="mensaje" placeholder="Por ejemplo, A65E-D099-1E33-F00D" />
           <p id="mensaje" class="error" role="alert" hidden></p>
           <button type="submit">Consultar</button>
         </form>
 
         <section id="estado" class="resultado" hidden>
+          <h2 id="titulo-estado" tabindex="-1">Estado de su reporte</h2>
           <div class="ticket">
             <p class="ticket-etiqueta">Ticket de seguimiento</p>
             <p id="e-codigo" class="codigo"></p>
@@ -57,6 +59,10 @@
           </div>
 
           <ol id="e-pasos" class="pasos" aria-label="Avance del reporte"></ol>
+
+          <p id="pendiente-validar" class="aviso" hidden>
+            <a href="#validacion">Falta su confirmación: ¿se cumplió la acción?</a>
+          </p>
 
           <dl>
             <dt>Tipo</dt>
@@ -94,7 +100,7 @@
             </form>
           </section>
 
-          <p id="validacion-hecha" class="aviso" hidden></p>
+          <p id="validacion-hecha" class="aviso" role="status" tabindex="-1" hidden></p>
         </section>
       </div>
     </main>
