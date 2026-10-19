@@ -50,7 +50,7 @@ async function entrar() {
   const { data: perfil, error } = await supabase.from('staff').select('full_name').maybeSingle();
   if (error || !perfil) {
     await supabase.auth.signOut();
-    mostrarLogin('Tu usuario no tiene permiso de funcionario.');
+    mostrarLogin('Su usuario no tiene permiso de funcionario.');
     return;
   }
 
@@ -176,7 +176,8 @@ async function elegir(id) {
   $('a-foto').value = '';
   mostrarError('error-accion', '');
   $('detalle').hidden = false;
-  $('detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('detalle').scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'nearest' });
 
   const [foto, historial, evidencias] = await Promise.all([
     cargarFoto(reporte),

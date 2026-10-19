@@ -17,9 +17,9 @@ export const ESTADOS = {
 
 export const COLOR_ESTADO = {
   recibido: '#b45309',
-  en_revision: '#1d4ed8',
-  atendido: '#15803d',
-  descartado: '#4b5563',
+  en_revision: '#4078b0',
+  atendido: '#2d522d',
+  descartado: '#6b7280',
 };
 
 export function fecha(iso) {

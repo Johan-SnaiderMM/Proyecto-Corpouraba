@@ -5,20 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
     <title>Panel del funcionario</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/src/estilos.css" />
   </head>
   <body>
-    <header class="barra">
-      <strong>Reporte ambiental · Panel</strong>
-      <nav>
-        <span id="usuario"></span>
-        <button type="button" id="btn-salir" class="secundario" hidden>Cerrar sesión</button>
-      </nav>
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
+    <header class="encabezado">
+      <div class="encabezado-interior">
+        <a class="marca" href="/panel/" aria-label="CORPOURABA, panel del funcionario">
+          <img src="/img/logo-corpouraba.png" width="129" height="56" alt="CORPOURABA" />
+        </a>
+        <nav aria-label="Sesión">
+          <span id="usuario"></span>
+          <button type="button" id="btn-salir" class="secundario" hidden>Cerrar sesión</button>
+        </nav>
+      </div>
     </header>
 
-    <main class="contenedor ancho">
+    <main id="contenido" tabindex="-1" class="contenedor ancho">
       <!-- Vista de inicio de sesión -->
-      <section id="vista-login" class="tarjeta">
+      <section id="vista-login" class="tarjeta login">
         <h1>Panel del funcionario</h1>
         <form id="form-login" novalidate>
           <label for="correo">Correo</label>
@@ -149,6 +155,18 @@
         </section>
       </section>
     </main>
+
+    <footer class="pie">
+      <div class="pie-interior">
+        <div class="pie-texto">
+          <p>
+            <strong>Prototipo de práctica.</strong> Panel de demostración con datos de prueba. No es un sistema
+            oficial de CORPOURABA.
+          </p>
+        </div>
+        <img class="pie-logo" src="/img/logo-corpouraba-blanco.png" width="129" height="56" alt="CORPOURABA" />
+      </div>
+    </footer>
 
     <script type="module" src="/src/panel.js"></script>
   </body>

@@ -49,7 +49,7 @@ $('btn-ubicacion').addEventListener('click', async () => {
     selector.fijar(p.lat, p.lng);
     mapa.setView([p.lat, p.lng], 16);
   } catch {
-    mostrarErrores(['No pudimos obtener tu ubicación. Toca el mapa para marcar el lugar.']);
+    mostrarErrores(['No pudimos obtener su ubicación. Toque el mapa para marcar el lugar.']);
   }
 });
 
@@ -86,7 +86,7 @@ formulario.addEventListener('submit', async (evento) => {
   // Freno básico contra envíos repetidos desde el mismo dispositivo.
   const ultimoEnvio = Number(localStorage.getItem('ultimoEnvio') ?? 0);
   if (Date.now() - ultimoEnvio < ESPERA_ENTRE_ENVIOS_MS) {
-    mostrarErrores(['Espera unos segundos antes de enviar otro reporte.']);
+    mostrarErrores(['Espere unos segundos antes de enviar otro reporte.']);
     return;
   }
 
@@ -104,7 +104,7 @@ formulario.addEventListener('submit', async (evento) => {
     mostrarResultado(codigo);
   } catch (error) {
     console.error(error);
-    mostrarErrores(['No se pudo enviar el reporte. Revisa tu conexión e inténtalo de nuevo.']);
+    mostrarErrores(['No se pudo enviar el reporte. Revise su conexión e inténtelo de nuevo.']);
   } finally {
     botonEnviar.disabled = false;
     botonEnviar.textContent = 'Enviar reporte';
@@ -134,7 +134,7 @@ $('btn-copiar-enlace').addEventListener('click', () =>
 $('btn-otro').addEventListener('click', () => {
   formulario.reset();
   punto = null;
-  $('coordenadas').textContent = 'Aún no has marcado un lugar.';
+  $('coordenadas').textContent = 'Aún no ha marcado un lugar.';
   $('resultado').hidden = true;
   formulario.hidden = false;
   mapa.invalidateSize();

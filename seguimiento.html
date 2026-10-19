@@ -3,83 +3,118 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0b6e77" />
+    <meta name="theme-color" content="#2d2f6e" />
     <!-- El enlace lleva el código del ticket: no se envía a otros sitios (por ejemplo, al cargar las fotos). -->
     <meta name="referrer" content="no-referrer" />
     <title>Consultar un reporte</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/src/estilos.css" />
   </head>
   <body>
-    <header class="barra">
-      <strong>Reporte ambiental</strong>
-      <nav>
-        <a href="/">Nuevo reporte</a>
-      </nav>
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
+    <header class="encabezado">
+      <div class="encabezado-interior">
+        <a class="marca" href="/" aria-label="CORPOURABA, inicio">
+          <img src="/img/logo-corpouraba.png" width="129" height="56" alt="CORPOURABA" />
+        </a>
+        <nav aria-label="Principal">
+          <a href="/">Reportar</a>
+          <a href="/seguimiento.html" aria-current="page">Consultar un reporte</a>
+        </nav>
+      </div>
     </header>
 
-    <main class="contenedor">
-      <h1>Consultar un reporte</h1>
-      <p class="ayuda">Escriba el código del ticket que recibió al enviar su reporte.</p>
-
-      <form id="formulario" novalidate>
-        <label for="codigo">Código del ticket</label>
-        <input id="codigo" name="codigo" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" required
-          placeholder="Por ejemplo, A65E-D099-1E33" />
-        <p id="mensaje" class="error" role="alert" hidden></p>
-        <button type="submit">Consultar</button>
-      </form>
-
-      <section id="estado" class="resultado" hidden>
-        <div class="ticket">
-          <p class="ticket-etiqueta">Ticket de seguimiento</p>
-          <p id="e-codigo" class="codigo"></p>
-          <div class="ticket-acciones">
-            <button type="button" id="btn-copiar-codigo" class="secundario">Copiar código</button>
-            <button type="button" id="btn-copiar-enlace" class="secundario">Copiar enlace</button>
-          </div>
-          <p id="copiado" class="ayuda" role="status"></p>
-        </div>
-
-        <ol id="e-pasos" class="pasos" aria-label="Avance del reporte"></ol>
-
-        <dl>
-          <dt>Tipo</dt>
-          <dd id="e-tipo"></dd>
-          <dt>Estado</dt>
-          <dd id="e-estado"></dd>
-          <dt>Recibido</dt>
-          <dd id="e-creado"></dd>
-          <dt>Última actualización</dt>
-          <dd id="e-actualizado"></dd>
-          <dt>Nota de la entidad</dt>
-          <dd id="e-nota"></dd>
-        </dl>
-
-        <h2>Avance y evidencia</h2>
-        <ol id="e-linea" class="linea"></ol>
-
-        <section id="validacion" class="validacion" hidden>
-          <h2>¿Se cumplió la acción?</h2>
-          <p class="ayuda">
-            La Corporación marcó su reporte como atendido. Revise la evidencia y cuéntenos si el problema quedó resuelto.
+    <main id="contenido" tabindex="-1">
+      <section class="portada">
+        <div class="portada-interior">
+          <p class="portada-etiqueta">Seguimiento</p>
+          <h1>Consultar un reporte</h1>
+          <p>
+            Escriba el código del ticket que recibió al enviar su reporte. Verá su avance, la evidencia de la
+            Corporación y podrá confirmar si la acción se cumplió.
           </p>
-          <form id="form-validacion" novalidate>
-            <fieldset>
-              <legend>Su respuesta</legend>
-              <label class="opcion"><input type="radio" name="veredicto" value="conforme" /> Sí, la acción se cumplió</label>
-              <label class="opcion"><input type="radio" name="veredicto" value="no_conforme" /> No, el problema continúa</label>
-            </fieldset>
-            <label for="v-comentario">Comentario (opcional)</label>
-            <textarea id="v-comentario" rows="3" maxlength="300"
-              placeholder="Si el problema continúa, cuéntenos qué sigue ocurriendo"></textarea>
-            <p id="error-validacion" class="error" role="alert" hidden></p>
-            <button type="submit" id="btn-validar">Enviar respuesta</button>
-          </form>
-        </section>
-
-        <p id="validacion-hecha" class="aviso" hidden></p>
+        </div>
       </section>
+
+      <div class="contenedor sobre-portada">
+        <form id="formulario" class="tarjeta" novalidate>
+          <label for="codigo">Código del ticket</label>
+          <input id="codigo" name="codigo" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" required
+            placeholder="Por ejemplo, A65E-D099-1E33" />
+          <p id="mensaje" class="error" role="alert" hidden></p>
+          <button type="submit">Consultar</button>
+        </form>
+
+        <section id="estado" class="resultado" hidden>
+          <div class="ticket">
+            <p class="ticket-etiqueta">Ticket de seguimiento</p>
+            <p id="e-codigo" class="codigo"></p>
+            <div class="ticket-acciones">
+              <button type="button" id="btn-copiar-codigo" class="secundario">Copiar código</button>
+              <button type="button" id="btn-copiar-enlace" class="secundario">Copiar enlace</button>
+            </div>
+            <p id="copiado" class="ayuda" role="status"></p>
+          </div>
+
+          <ol id="e-pasos" class="pasos" aria-label="Avance del reporte"></ol>
+
+          <dl>
+            <dt>Tipo</dt>
+            <dd id="e-tipo"></dd>
+            <dt>Estado</dt>
+            <dd id="e-estado"></dd>
+            <dt>Recibido</dt>
+            <dd id="e-creado"></dd>
+            <dt>Última actualización</dt>
+            <dd id="e-actualizado"></dd>
+            <dt>Nota de la entidad</dt>
+            <dd id="e-nota"></dd>
+          </dl>
+
+          <h2>Avance y evidencia</h2>
+          <ol id="e-linea" class="linea"></ol>
+
+          <section id="validacion" class="validacion" hidden>
+            <h2>¿Se cumplió la acción?</h2>
+            <p class="ayuda">
+              La Corporación marcó su reporte como atendido. Revise la evidencia y cuéntenos si el problema quedó
+              resuelto.
+            </p>
+            <form id="form-validacion" novalidate>
+              <fieldset>
+                <legend>Su respuesta</legend>
+                <label class="opcion"><input type="radio" name="veredicto" value="conforme" /> Sí, la acción se cumplió</label>
+                <label class="opcion"><input type="radio" name="veredicto" value="no_conforme" /> No, el problema continúa</label>
+              </fieldset>
+              <label for="v-comentario">Comentario (opcional)</label>
+              <textarea id="v-comentario" rows="3" maxlength="300"
+                placeholder="Si el problema continúa, cuéntenos qué sigue ocurriendo"></textarea>
+              <p id="error-validacion" class="error" role="alert" hidden></p>
+              <button type="submit" id="btn-validar">Enviar respuesta</button>
+            </form>
+          </section>
+
+          <p id="validacion-hecha" class="aviso" hidden></p>
+        </section>
+      </div>
     </main>
+
+    <footer class="pie">
+      <div class="pie-interior">
+        <div class="pie-texto">
+          <p>
+            <strong>Prototipo de práctica.</strong> Esta aplicación no es un canal oficial de CORPOURABA. Para
+            trámites reales comuníquese con la Corporación:
+          </p>
+          <p>
+            PBX <a href="tel:+576048281022">(604) 828 10 22</a> ·
+            <a href="mailto:atencionalusuario@corpouraba.gov.co">atencionalusuario@corpouraba.gov.co</a> ·
+            <a href="https://www.corpouraba.gov.co" rel="noopener">www.corpouraba.gov.co</a>
+          </p>
+        </div>
+        <img class="pie-logo" src="/img/logo-corpouraba-blanco.png" width="129" height="56" alt="CORPOURABA" />
+      </div>
+    </footer>
 
     <script type="module" src="/src/seguimiento.js"></script>
   </body>

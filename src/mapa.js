@@ -39,7 +39,7 @@ export function selectorDePunto(mapa, alCambiar) {
     } else {
       marcador = L.circleMarker([lat, lng], {
         radius: 10,
-        color: '#0b6e77',
+        color: '#2d2f6e',
         weight: 3,
         fillOpacity: 0.4,
       }).addTo(mapa);

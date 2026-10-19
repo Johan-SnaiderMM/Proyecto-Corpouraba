@@ -59,6 +59,15 @@ Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.
 
 Otros comandos: `npm test` (pruebas de validación y del ticket), `npm run build` (versión para publicar, en `dist/`).
 
+## Identidad visual
+
+El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
+
+- **Colores del manual:** azul `#2D2F6E`, verde `#2D522D` y los degradados `#4078B0 → #2D2F6E` y `#8DAC3D → #2D522D`. Todos están definidos como variables al inicio de `src/estilos.css`.
+- **Tipografía:** el manual pide Gotham Rounded, que es una fuente comercial. Mientras no se tenga la licencia se usa Montserrat (gratuita, empaquetada con `@fontsource-variable/montserrat`, sin pedir nada a servidores externos). Para cambiarla basta con editar `--fuente`.
+- **Logo** (`public/img/`): se tomó del manual, sin deformarlo ni recolorearlo. Va sobre fondo blanco en el encabezado, en su versión blanca sobre el verde del pie (abajo a la derecha, como indica el manual) y con 50 px de alto como mínimo en pantalla. `curvas.svg` es un dibujo propio que imita las "curvas en degradé azul y verde" del manual.
+- **Pendiente de confirmar con CORPOURABA:** que se pueda usar su nombre y su logo en este prototipo. Mientras tanto, todas las páginas dicen que es un prototipo de práctica y no un canal oficial, y el pie remite a los canales reales (PBX, correo y sitio web del manual).
+
 ## Seguridad en pocas líneas
 
 - La clave `anon` es pública por diseño. **Nunca** uses la clave `service_role` en este código ni la subas a GitHub.

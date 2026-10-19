@@ -84,6 +84,7 @@ function dibujarValidacion(seguimiento) {
   const hecha = $('validacion-hecha');
   formulario.hidden = !seguimiento.puede_validar;
   hecha.hidden = true;
+  hecha.classList.remove('aviso-ok');
   mostrarErrorValidacion('');
 
   if (seguimiento.puede_validar) return;
@@ -91,6 +92,7 @@ function dibujarValidacion(seguimiento) {
   const validacion = seguimiento.validacion;
   if (validacion?.veredicto === 'conforme') {
     hecha.textContent = `Usted confirmó el ${fecha(validacion.fecha)} que la acción se cumplió. ¡Gracias por ayudarnos a verificarlo!`;
+    hecha.classList.add('aviso-ok');
     hecha.hidden = false;
   } else if (validacion?.veredicto === 'no_conforme' && seguimiento.estado === 'en_revision') {
     hecha.textContent = `Usted indicó el ${fecha(validacion.fecha)} que el problema continúa. El caso volvió a revisión; verá aquí la nueva respuesta.`;
