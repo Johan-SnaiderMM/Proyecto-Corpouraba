@@ -72,16 +72,17 @@ El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
 
 ## Datos de demostración
 
-Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, después de haber registrado a una funcionaria en `staff`:
+Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, **después de haber registrado a una funcionaria en `staff`** (paso 4 de "Puesta en marcha"):
 
-1. Ejecute `supabase/demo.sql` en el SQL Editor de Supabase. Se puede repetir: borra y vuelve a crear los reportes DEMO.
+1. Ejecute `supabase/demo.sql` en el SQL Editor de Supabase. Se puede repetir: borra y vuelve a crear los reportes DEMO con fechas relativas a hoy (por eso conviene cargarlo **el mismo día de la presentación**; las horas son de Colombia).
+   Los 30 reportes genéricos de `seed.sql` quedan por encima de los DEMO en el panel (orden por fecha). Para que la demostración se vea limpia, bórrelos: `delete from reports where description like 'Reporte de prueba%';`
 2. Suba las fotos de evidencia (son 7 imágenes de ejemplo, rotuladas "IMAGEN DE EJEMPLO"):
 
    ```bash
    npm run demo:fotos
    ```
 
-   Pide el correo y la contraseña de la funcionaria (la misma del panel) y usa la clave `anon` del `.env`: no necesita la clave `service_role`. Requiere Node 20.6 o más nuevo.
+   Pide el correo y la contraseña de la funcionaria (la misma del panel; la contraseña no se muestra al escribirla) y usa la clave `anon` del `.env`: no necesita la clave `service_role`. Requiere **Node 22 o más nuevo**; si algo falla, el mensaje dice qué revisar.
 
 Tickets para la demostración (se escriben con o sin guiones):
 
@@ -103,7 +104,7 @@ Para quitarlos: `delete from reports where tracking_code like 'DEMO%';` (las fot
 | Web | `npm test` y `npm run build` | Ticket, validaciones del formulario, lógica del captcha y que el sitio compile |
 | Base de datos | `bash supabase/tests/ejecutar.sh` | Carga el SQL en un Postgres de verdad y comprueba permisos (RLS), que no se filtren notas internas, la validación del ciudadano, los datos de demostración y el captcha |
 
-En GitHub se ejecutan solas en cada subida (`.github/workflows/ci.yml`): el resultado se ve en la pestaña **Actions** y como marca verde o X roja junto a cada commit. Para correr las de la base de datos en su computador hace falta `psql` y un Postgres 14 o más nuevo (las variables `PGHOST`, `PGUSER`, etc. indican a cuál conectarse).
+En GitHub se ejecutan solas en cada subida (`.github/workflows/ci.yml`): el resultado se ve en la pestaña **Actions** y como marca verde o X roja junto a cada commit. Las pruebas web piden Node 22. Para correr las de la base de datos en su computador hace falta `psql` y un Postgres 14 o más nuevo (las variables `PGHOST`, `PGUSER`, etc. indican a cuál conectarse).
 
 ## Captcha (opcional)
 
@@ -123,16 +124,33 @@ Cómo funciona: con el captcha activo, el formulario ya no llama a Supabase para
    Vuelva a desplegar.
 3. Compruebe en el sitio publicado que se puede enviar un reporte (incluida una foto).
 4. Ejecute `supabase/captcha.sql` en el SQL Editor de Supabase.
+5. **Compruebe que quedó cerrada la puerta directa.** Este comando debe responder `permission denied for function create_report` (si crea un reporte, el captcha no está protegiendo nada):
+
+   ```bash
+   curl -s -X POST "https://TU-PROYECTO.supabase.co/rest/v1/rpc/create_report" \
+     -H "apikey: TU-CLAVE-ANON" -H "Content-Type: application/json" \
+     -d '{"p_type":"otro","p_description":"prueba del captcha","p_lat":7.8,"p_lng":-76.6}'
+   ```
+
+   Si más adelante ejecuta otro SQL que otorgue permisos sobre `create_report`, vuelva a ejecutar `supabase/captcha.sql` y repita esta comprobación.
 
 **Desactivarlo:** ejecute `supabase/captcha-desactivar.sql`, quite `VITE_TURNSTILE_SITE_KEY` en Vercel y vuelva a desplegar. Ambos SQL se pueden repetir sin problema.
 
 **Probarlo con las claves de prueba de Cloudflare** (siempre aprueban): Site key `1x00000000000000000000AA` y Secret key `1x0000000000000000000000000000000AA`. La función `api/` no corre con `npm run dev`; para probar el flujo completo en su computador use `npx vercel dev`.
 
-Límites: el captcha protege la creación de reportes. No limita cuántas veces se consulta un ticket (eso lo protege el tamaño del código) ni reemplaza un límite de peticiones por IP, que se configura aparte en Vercel Firewall.
+> **Las claves de prueba solo sirven en su computador o en Preview.** Si la Secret key de prueba queda en Vercel como `TURNSTILE_SECRET_KEY` de producción, *cualquier* texto pasa como token y el captcha no protege nada (con `captcha.sql` aplicado, la API quedaría abierta). La función se niega a trabajar con una clave de prueba cuando `VERCEL_ENV` es `production`, pero no confíe solo en eso: use las claves reales.
+
+Si define `TURNSTILE_HOSTNAME`, debe ser **exactamente** el dominio de producción, sin `https://` (por ejemplo, `mi-proyecto.vercel.app`). Un desajuste rechaza a todo el mundo con `captcha_invalido`; compruébelo enviando un reporte tras desplegar.
+
+**Qué protege y qué no:**
+- Protege la *creación* de reportes y la subida de fotos contra robots simples. No detiene a quien resuelve captchas con servicios pagos o navegadores automatizados.
+- `/api/crear-reporte` no tiene un límite propio de peticiones: cada intento, aun con un token falso, cuesta una invocación de Vercel y una consulta a Cloudflare. Un límite por IP se configura aparte (Vercel Firewall).
+- `get_report_tracking` y `validate_report` siguen abiertas con la clave `anon`: se protegen por el tamaño del código del ticket (64 bits), no por captcha.
+- La espera de 30 segundos y el campo trampa del formulario viven en el navegador: ayudan con envíos repetidos de personas, no frenan a un robot.
 
 ## Seguridad en pocas líneas
 
-- Con el captcha activo, `create_report` solo lo puede llamar la función del servidor (`service_role`); sin captcha, cualquiera con la clave `anon` puede crear reportes.
+- Con el captcha **activo** (variables en Vercel *y* `supabase/captcha.sql` ejecutado), `create_report` solo lo puede llamar la función del servidor (`service_role`). Definir las variables sin ejecutar el SQL no cierra la puerta directa: cualquiera con la clave `anon` puede seguir creando reportes.
 - La clave `anon` es pública por diseño. **Nunca** uses la clave `service_role` en este código ni la subas a GitHub.
 - Las tablas tienen RLS: solo los funcionarios (tabla `staff`) las leen. El ciudadano solo llama a `create_report`, `get_report_tracking` y `validate_report`, y sube fotos de su reporte a un bucket privado.
 - El ticket es la única llave para ver un reporte y responder su validación, por eso los códigos nuevos tienen 16 caracteres al azar (64 bits). Supabase no limita por sí solo los intentos a las funciones: si el sistema llegara a usarse de verdad, hay que agregar un límite de peticiones (por ejemplo, en Vercel Firewall).

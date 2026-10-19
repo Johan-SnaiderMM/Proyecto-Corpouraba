@@ -19,6 +19,8 @@ async function enviarConCaptcha({ tipo, descripcion, lat, lng, archivoFoto, toke
   if (!respuesta.ok) {
     const error = new Error(datos.error ?? `HTTP ${respuesta.status}`);
     error.motivo = datos.error;
+    error.estado = respuesta.status;
+    error.detalle = Array.isArray(datos.errores) ? datos.errores.join(' ') : '';
     throw error;
   }
 
@@ -72,17 +74,33 @@ let punto = null;
 // Captcha opcional: solo existe si hay VITE_TURNSTILE_SITE_KEY. El token sirve una sola vez.
 let tokenCaptcha = null;
 let captcha = null;
+let captchaNoCargo = false;
+let errorDeCaptchaVisible = false;
+const MENSAJE_CAPTCHA_NO_CARGO = 'No se pudo cargar la verificación de seguridad. Recargue la página.';
+
+// Los avisos del captcha se quitan solos cuando el recuadro entrega un token nuevo.
+function mostrarErrorDeCaptcha(texto) {
+  mostrarErrores([texto]);
+  errorDeCaptchaVisible = true;
+}
+
 if (captchaActivo) {
   $('captcha-bloque').hidden = false;
   montarCaptcha($('captcha'), (token) => {
     tokenCaptcha = token;
+    if (token && errorDeCaptchaVisible) mostrarErrores([]);
   })
     .then((c) => {
       captcha = c;
     })
-    .catch(() => mostrarErrores(['No se pudo cargar la verificación de seguridad. Recargue la página.']));
+    .catch(() => {
+      captchaNoCargo = true;
+      mostrarErrorDeCaptcha(MENSAJE_CAPTCHA_NO_CARGO);
+    });
 }
 
+// Errores del servidor que no son culpa de la persona ni de su conexión.
+const MENSAJE_SERVICIO_NO_DISPONIBLE = 'El servicio no está disponible en este momento. Inténtelo más tarde.';
 const MENSAJES_CAPTCHA = {
   captcha_requerido: 'Complete la verificación de seguridad.',
   captcha_invalido: 'La verificación de seguridad venció o no es válida. Complétela de nuevo e inténtelo otra vez.',
@@ -106,12 +124,14 @@ $('btn-ubicacion').addEventListener('click', async () => {
 });
 
 function mostrarErrores(lista) {
+  errorDeCaptchaVisible = false;
   bloqueErrores.hidden = lista.length === 0;
   bloqueErrores.textContent = lista.join(' ');
 }
 
 formulario.addEventListener('submit', async (evento) => {
   evento.preventDefault();
+  if (botonEnviar.disabled) return; // ya se está enviando: un segundo envío gastaría el token del captcha
   mostrarErrores([]);
 
   const archivoFoto = $('foto').files[0] ?? null;
@@ -143,7 +163,7 @@ formulario.addEventListener('submit', async (evento) => {
   }
 
   if (captchaActivo && !tokenCaptcha) {
-    mostrarErrores([MENSAJES_CAPTCHA.captcha_requerido]);
+    mostrarErrorDeCaptcha(captchaNoCargo ? MENSAJE_CAPTCHA_NO_CARGO : MENSAJES_CAPTCHA.captcha_requerido);
     return;
   }
 
@@ -164,7 +184,15 @@ formulario.addEventListener('submit', async (evento) => {
     mostrarResultado(codigo, { fotoSubida });
   } catch (error) {
     console.error(error);
-    mostrarErrores([MENSAJES_CAPTCHA[error.motivo] ?? 'No se pudo enviar el reporte. Revise su conexión e inténtelo de nuevo.']);
+    if (MENSAJES_CAPTCHA[error.motivo]) {
+      mostrarErrorDeCaptcha(MENSAJES_CAPTCHA[error.motivo]);
+    } else if (error.motivo === 'datos_invalidos' && error.detalle) {
+      mostrarErrores([error.detalle]);
+    } else if (error.estado >= 500) {
+      mostrarErrores([MENSAJE_SERVICIO_NO_DISPONIBLE]);
+    } else {
+      mostrarErrores(['No se pudo enviar el reporte. Revise su conexión e inténtelo de nuevo.']);
+    }
   } finally {
     // Cada token de captcha sirve una sola vez, haya salido bien o mal el envío.
     captcha?.reiniciar();

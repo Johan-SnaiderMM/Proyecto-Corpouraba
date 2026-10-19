@@ -246,3 +246,12 @@ if (codigoEnEnlace) {
   $('codigo').value = formatearCodigo(codigoEnEnlace);
   consultar(codigoEnEnlace);
 }
+
+// Si se pega otro enlace de ticket en la misma pestaña (cambia solo el #), se consulta el nuevo.
+window.addEventListener('hashchange', () => {
+  const nuevo = codigoDeEnlace(location.hash, location.search);
+  if (nuevo && normalizarCodigo(nuevo) !== codigoActual) {
+    $('codigo').value = formatearCodigo(nuevo);
+    consultar(nuevo);
+  }
+});

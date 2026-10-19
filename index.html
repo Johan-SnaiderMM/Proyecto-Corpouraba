@@ -71,8 +71,8 @@
           </div>
 
           <!-- Captcha opcional: solo se muestra si hay VITE_TURNSTILE_SITE_KEY (ver README) -->
-          <div id="captcha-bloque" class="captcha" hidden>
-            <p class="ayuda">Verificación de seguridad</p>
+          <div id="captcha-bloque" class="captcha" role="group" aria-labelledby="captcha-titulo" hidden>
+            <p id="captcha-titulo" class="ayuda">Verificación de seguridad</p>
             <div id="captcha"></div>
           </div>
 

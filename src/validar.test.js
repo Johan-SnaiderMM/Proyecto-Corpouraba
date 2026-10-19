@@ -41,4 +41,26 @@ describe('validarReporte', () => {
   it('acumula varios problemas a la vez', () => {
     expect(validarReporte({})).toHaveLength(3);
   });
+
+  it('rechaza un tipo que no es texto, aunque tenga forma de objeto', () => {
+    for (const tipo of [['tala'], { toString: 1, valueOf: 1 }, 42, null, undefined]) {
+      expect(validarReporte({ ...valido, tipo })).toHaveLength(1);
+    }
+  });
+
+  it('cuenta caracteres y no unidades UTF-16 (un emoji es uno solo)', () => {
+    expect(validarReporte({ ...valido, descripcion: '😀😀😀😀😀' })).toHaveLength(1); // 5 caracteres, aunque length sea 10
+    expect(validarReporte({ ...valido, descripcion: '😀'.repeat(10) })).toEqual([]);
+    expect(validarReporte({ ...valido, descripcion: 'a'.repeat(1000) })).toEqual([]);
+    expect(validarReporte({ ...valido, descripcion: 'a'.repeat(1001) })).toHaveLength(1);
+  });
+
+  it('rechaza el carácter nulo, que la base de datos no puede guardar', () => {
+    expect(validarReporte({ ...valido, descripcion: 'Talan árboles\u0000 en el río' })).toHaveLength(1);
+  });
+
+  it('rechaza una descripción que no es texto', () => {
+    expect(validarReporte({ ...valido, descripcion: 12345678901234 })).toHaveLength(1);
+    expect(validarReporte({ ...valido, descripcion: ['uno', 'dos'] })).toHaveLength(1);
+  });
 });

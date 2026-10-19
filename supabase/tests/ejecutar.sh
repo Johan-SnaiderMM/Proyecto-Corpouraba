@@ -34,14 +34,22 @@ sql -f "$SQL/demo.sql"
 sql -f "$SQL/demo.sql"
 sql -f "$AQUI/demo.test.sql" >/dev/null
 
-if [ -f "$SQL/captcha.sql" ]; then
-  echo "== Captcha: activar, probar, desactivar, volver a activar"
-  sql -f "$SQL/captcha.sql"
-  sql -f "$AQUI/captcha.test.sql" >/dev/null
-  sql -f "$SQL/captcha-desactivar.sql"
-  sql -f "$AQUI/captcha-desactivado.test.sql" >/dev/null
-  sql -f "$SQL/captcha.sql"
-fi
+echo "== Captcha: activar y probar"
+sql -f "$SQL/captcha.sql"
+sql -f "$AQUI/captcha.test.sql" >/dev/null
+
+echo "== Captcha: repetir seguimiento.sql NO debe reabrir la puerta directa"
+sql -f "$SQL/seguimiento.sql"
+sql -f "$AQUI/captcha.test.sql" >/dev/null
+
+echo "== Captcha: desactivar y probar"
+sql -f "$SQL/captcha-desactivar.sql"
+sql -f "$AQUI/captcha-desactivado.test.sql" >/dev/null
+
+echo "== Captcha: volver a activar (y repetirlo)"
+sql -f "$SQL/captcha.sql"
+sql -f "$SQL/captcha.sql"
+sql -f "$AQUI/captcha.test.sql" >/dev/null
 
 admin -c "drop database if exists \"$BASE\" with (force)"
 echo "== TODO OK"

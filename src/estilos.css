@@ -419,8 +419,10 @@ button.secundario:hover {
 }
 
 .captcha {
+  max-width: 100%;
   min-height: 90px;
   margin-top: 16px;
+  overflow-x: auto;
 }
 
 .trampa {

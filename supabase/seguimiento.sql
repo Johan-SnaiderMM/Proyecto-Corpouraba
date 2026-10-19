@@ -266,7 +266,9 @@ end;
 $$;
 
 grant execute on function norm_code(text) to anon, authenticated;
-grant execute on function create_report(report_type, text, double precision, double precision, text) to anon, authenticated;
+-- OJO: aquí NO se vuelve a dar permiso sobre create_report. "create or replace" conserva los permisos que ya tenía
+-- (los de schema.sql o, si se activó el captcha, los de supabase/captcha.sql). Si se otorgara aquí, repetir este archivo
+-- reabriría sin aviso la puerta que el captcha cerró.
 grant execute on function get_report_status(text) to anon, authenticated;
 grant execute on function get_report_tracking(text) to anon, authenticated;
 grant execute on function validate_report(text, text, text, bigint) to anon, authenticated;

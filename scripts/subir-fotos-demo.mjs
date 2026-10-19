@@ -13,35 +13,76 @@ import { createClient } from '@supabase/supabase-js';
 
 const CARPETA = new URL('../supabase/demo/fotos/', import.meta.url);
 
-const url = process.env.VITE_SUPABASE_URL;
-const claveAnon = process.env.VITE_SUPABASE_ANON_KEY;
-if (!url || !claveAnon) {
-  console.error('Falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Copie .env.example a .env y complételo.');
+// El cliente de Supabase necesita WebSocket nativo, que trae Node 22 o más nuevo.
+const [mayor] = process.versions.node.split('.').map(Number);
+if (mayor < 22) {
+  console.error(`Este script necesita Node 22 o más nuevo (tiene ${process.versions.node}). Descargue la versión LTS en nodejs.org.`);
   process.exit(1);
 }
 
-// Pregunta un dato; con { oculto: true } no muestra lo que se escribe (para la contraseña).
-async function preguntar(texto, { oculto = false } = {}) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  if (oculto) {
-    rl._writeToOutput = (cadena) => {
-      if (cadena.includes(texto)) process.stdout.write(cadena);
-    };
-  }
+// Lee el .env del proyecto si existe (si no, se revisa más abajo qué falta).
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // sin .env: puede que las variables ya estén definidas en el entorno
+}
+
+const url = process.env.VITE_SUPABASE_URL;
+const claveAnon = process.env.VITE_SUPABASE_ANON_KEY;
+if (!url || !claveAnon || url.includes('TU-PROYECTO')) {
+  console.error('Falta configurar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY. Copie .env.example a .env y complételo (ver README).');
+  process.exit(1);
+}
+
+async function preguntar(texto) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
   const respuesta = await rl.question(texto);
   rl.close();
-  if (oculto) process.stdout.write('\n');
   return respuesta.trim();
 }
 
+// Pide la contraseña sin mostrarla en pantalla (importante si se comparte la pantalla en la presentación).
+function preguntarOculto(texto) {
+  if (!process.stdin.isTTY) return preguntar(texto); // entrada redirigida: no hay pantalla que cuidar
+  return new Promise((ok) => {
+    let escrito = '';
+    const terminar = () => {
+      process.stdin.off('data', alDato);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stdout.write('\n');
+      ok(escrito.trim());
+    };
+    const alDato = (bloque) => {
+      for (const letra of bloque.toString('utf8')) {
+        if (letra === '\r' || letra === '\n') return terminar();
+        if (letra === '\u0003') {
+          terminar();
+          process.exit(130); // Ctrl+C
+        }
+        if (letra === '\u007f' || letra === '\b') escrito = escrito.slice(0, -1);
+        else if (letra >= ' ') escrito += letra;
+      }
+    };
+    process.stdout.write(texto);
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', alDato);
+  });
+}
+
 const correo = process.env.DEMO_CORREO || (await preguntar('Correo de la funcionaria: '));
-const clave = process.env.DEMO_CLAVE || (await preguntar('Contraseña: ', { oculto: true }));
+const clave = process.env.DEMO_CLAVE || (await preguntarOculto('Contraseña: '));
 
 const supabase = createClient(url, claveAnon, { auth: { persistSession: false } });
 
 const { error: errorEntrada } = await supabase.auth.signInWithPassword({ email: correo, password: clave });
 if (errorEntrada) {
-  console.error('No se pudo iniciar sesión: correo o contraseña incorrectos.');
+  if (errorEntrada.status === 400 || errorEntrada.code === 'invalid_credentials') {
+    console.error('No se pudo iniciar sesión: correo o contraseña incorrectos.');
+  } else {
+    console.error(`No se pudo conectar con Supabase (${errorEntrada.message}). Revise VITE_SUPABASE_URL, su conexión y que el proyecto no esté pausado.`);
+  }
   process.exit(1);
 }
 

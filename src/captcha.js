@@ -12,10 +12,7 @@ function cargarScript() {
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.async = true;
     script.onload = ok;
-    script.onerror = () => {
-      carga = null; // permite reintentar
-      fallo(new Error('No se pudo cargar el captcha.'));
-    };
+    script.onerror = () => fallo(new Error('No se pudo cargar el captcha.'));
     document.head.append(script);
   });
   return carga;
@@ -28,6 +25,8 @@ export async function montarCaptcha(contenedor, alCambiar) {
   const id = window.turnstile.render(contenedor, {
     sitekey: CLAVE_SITIO,
     language: 'es',
+    // En pantallas muy angostas el recuadro normal (300 px) no cabe en la tarjeta.
+    size: contenedor.clientWidth > 0 && contenedor.clientWidth < 300 ? 'compact' : 'normal',
     callback: (token) => alCambiar(token),
     'expired-callback': () => alCambiar(null),
     'error-callback': () => alCambiar(null),

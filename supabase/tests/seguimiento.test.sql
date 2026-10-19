@@ -134,7 +134,7 @@ reset role;
 
 \echo '-- 9. Funciones y permisos'
 select pruebas.esperar((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                        where n.nspname = 'public' and p.prosecdef and not ('search_path=public, pg_temp' = any (p.proconfig))) = 0,
+                        where n.nspname = 'public' and p.prosecdef and not coalesce('search_path=public, pg_temp' = any (p.proconfig), false)) = 0,
   'todas las funciones SECURITY DEFINER fijan search_path con pg_temp al final');
 select pruebas.esperar(not has_function_privilege('anon', 'change_status(uuid, report_status, text, text)', 'execute'), 'anon no ejecuta change_status');
 select pruebas.esperar(not has_function_privilege('anon', 'add_evidence(uuid, text, text)', 'execute'), 'anon no ejecuta add_evidence');
@@ -164,4 +164,46 @@ select pruebas.esperar_error(format($q$insert into storage.objects (bucket_id, n
   'row-level security', 'ni una extensión no permitida');
 reset role;
 reset request.jwt.claim.sub;
+\echo '-- 11. Con datos en las tablas, siguen cerradas (una tabla vacía daría 0 filas aunque estuviera abierta)'
+select pruebas.esperar((select count(*) from reports) > 0 and (select count(*) from report_events) > 0
+                        and (select count(*) from report_evidence) > 0 and (select count(*) from report_validations) > 0
+                        and (select count(*) from staff) > 0, 'precondición: todas las tablas tienen filas');
+set role anon;
+select pruebas.esperar((select count(*) from reports) + (select count(*) from report_events) + (select count(*) from report_evidence)
+                        + (select count(*) from report_validations) + (select count(*) from staff) = 0, 'anon no ve ninguna fila de ninguna tabla');
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pruebas.esperar((select count(*) from reports) + (select count(*) from report_events) + (select count(*) from report_evidence)
+                        + (select count(*) from report_validations) + (select count(*) from staff) = 0, 'un no funcionario no ve ninguna fila de ninguna tabla');
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pruebas.esperar((select count(*) from staff) = 1, 'cada funcionaria ve solo su propia fila de staff');
+select pruebas.esperar((select count(*) from report_evidence) > 0 and (select count(*) from report_validations) > 0, 'la funcionaria sí ve evidencia y validaciones');
+reset role;
+reset request.jwt.claim.sub;
+
+\echo '-- 12. Un reporte que dejó de estar atendido ya no se puede validar con su cierre anterior'
+set role anon;
+select create_report('quema', 'Reporte para probar el cierre reabierto', 7.8, -76.6, null) as codigo3 \gset
+reset role;
+select id as rid3 from reports where tracking_code = :'codigo3' \gset
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select change_status(:'rid3', 'atendido', 'cierre', 'Atendido');
+reset role;
+reset request.jwt.claim.sub;
+set role anon;
+select get_report_tracking(:'codigo3') ->> 'cierre' as cierre3 \gset
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select change_status(:'rid3', 'en_revision', 'se reabrió', null);
+reset role;
+reset request.jwt.claim.sub;
+set role anon;
+select pruebas.esperar_error(format($q$select validate_report(%L, 'conforme', null, %s)$q$, :'codigo3', :'cierre3'), 'no está esperando validación',
+  'no se valida un cierre de un reporte que ya no está atendido');
+reset role;
 \echo '-- Seguimiento: TODO OK'
