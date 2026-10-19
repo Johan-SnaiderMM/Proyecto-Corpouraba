@@ -1,0 +1,291 @@
+:root {
+  --verde: #0b6e77;
+  --verde-oscuro: #08545b;
+  --fondo: #f6f4ee;
+  --tarjeta: #fbfaf6;
+  --texto: #12263a;
+  --texto-suave: #4a5a68;
+  --borde: #dad5c6;
+  --error: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fondo);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #f6f4ee;
+  background: var(--verde);
+}
+
+.barra a {
+  color: #f6f4ee;
+}
+
+.barra nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contenedor {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.contenedor.ancho {
+  max-width: 1200px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin: 20px 0 8px;
+  font-size: 1.05rem;
+}
+
+label {
+  display: block;
+  margin: 16px 0 6px;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--texto);
+  background: #ffffff;
+  border: 1px solid #b9b3a2;
+  border-radius: 8px;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #e6a93a;
+  outline-offset: 2px;
+}
+
+button {
+  margin-top: 16px;
+  padding: 12px 20px;
+  font: inherit;
+  font-weight: 600;
+  color: #f6f4ee;
+  background: var(--verde);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--verde-oscuro);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+button.secundario {
+  color: var(--verde-oscuro);
+  background: transparent;
+  border: 2px solid var(--verde);
+}
+
+button.secundario:hover {
+  background: #e4efef;
+}
+
+.barra button.secundario {
+  margin: 0;
+  padding: 6px 12px;
+  color: #f6f4ee;
+  border-color: #f6f4ee;
+}
+
+.barra button.secundario:hover {
+  background: var(--verde-oscuro);
+}
+
+.aviso {
+  padding: 12px 16px;
+  background: #fdf3dc;
+  border-left: 4px solid #e6a93a;
+  border-radius: 4px;
+}
+
+.ayuda {
+  margin: 4px 0 8px;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.error {
+  margin: 12px 0 0;
+  color: var(--error);
+  font-weight: 600;
+}
+
+.trampa {
+  position: absolute;
+  left: -9999px;
+}
+
+#mapa {
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.resultado,
+.tarjeta {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.codigo {
+  display: inline-block;
+  padding: 8px 16px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  background: #ffffff;
+  border: 2px dashed var(--verde);
+  border-radius: 8px;
+  user-select: all;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+dt {
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.rejilla-panel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .rejilla-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rejilla-panel #mapa {
+    height: 480px;
+  }
+}
+
+.tabla-contenedor {
+  max-height: 480px;
+  overflow: auto;
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--borde);
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #ece8da;
+}
+
+tbody tr {
+  cursor: pointer;
+}
+
+tbody tr:hover,
+tbody tr.activa {
+  background: #e4efef;
+}
+
+.historial {
+  margin: 0;
+  padding-left: 20px;
+}
+
+#d-foto img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  margin-top: 12px;
+  border-radius: 8px;
+}

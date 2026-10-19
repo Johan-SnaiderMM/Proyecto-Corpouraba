@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b6e77" />
+    <title>Consultar un reporte</title>
+    <link rel="stylesheet" href="/src/estilos.css" />
+  </head>
+  <body>
+    <header class="barra">
+      <strong>Reporte ambiental</strong>
+      <nav>
+        <a href="/">Nuevo reporte</a>
+      </nav>
+    </header>
+
+    <main class="contenedor">
+      <h1>Consultar un reporte</h1>
+      <p class="ayuda">Escribe el código que recibiste al enviar tu reporte.</p>
+
+      <form id="formulario" novalidate>
+        <label for="codigo">Código de seguimiento</label>
+        <input id="codigo" name="codigo" type="text" maxlength="16" autocomplete="off" required
+          placeholder="Por ejemplo, A1B2C3D4" />
+        <p id="mensaje" class="error" role="alert" hidden></p>
+        <button type="submit">Consultar</button>
+      </form>
+
+      <section id="estado" class="resultado" hidden aria-live="polite">
+        <h2>Estado del reporte</h2>
+        <dl>
+          <dt>Tipo</dt>
+          <dd id="e-tipo"></dd>
+          <dt>Estado</dt>
+          <dd id="e-estado"></dd>
+          <dt>Recibido</dt>
+          <dd id="e-creado"></dd>
+          <dt>Última actualización</dt>
+          <dd id="e-actualizado"></dd>
+          <dt>Nota de la entidad</dt>
+          <dd id="e-nota"></dd>
+        </dl>
+      </section>
+    </main>
+
+    <script type="module" src="/src/seguimiento.js"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b6e77" />
+    <title>Reportar una afectación ambiental</title>
+    <link rel="stylesheet" href="/src/estilos.css" />
+  </head>
+  <body>
+    <header class="barra">
+      <strong>Reporte ambiental</strong>
+      <nav>
+        <a href="/seguimiento.html">Consultar un reporte</a>
+      </nav>
+    </header>
+
+    <main class="contenedor">
+      <h1>Reportar una afectación ambiental</h1>
+      <p class="aviso">
+        Prototipo de práctica. Usa solo datos de prueba: no escribas tu nombre, cédula ni otros datos personales.
+      </p>
+
+      <form id="formulario" novalidate>
+        <label for="tipo">Qué ocurre</label>
+        <select id="tipo" name="tipo" required>
+          <option value="">Elige una opción</option>
+          <option value="tala">Tala de árboles</option>
+          <option value="quema">Quema</option>
+          <option value="vertimiento">Vertimiento o contaminación del agua</option>
+          <option value="fauna">Fauna (caza o tráfico)</option>
+          <option value="residuos">Residuos</option>
+          <option value="otro">Otro</option>
+        </select>
+
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000" required
+          placeholder="Cuenta qué viste, desde cuándo y cualquier detalle que ayude a ubicarlo"></textarea>
+
+        <label for="mapa">Lugar</label>
+        <p class="ayuda">Toca el mapa para marcar el sitio, o usa tu ubicación actual.</p>
+        <div id="mapa" role="application" aria-label="Mapa para marcar el lugar del reporte"></div>
+        <button type="button" id="btn-ubicacion" class="secundario">Usar mi ubicación</button>
+        <p id="coordenadas" class="ayuda" aria-live="polite">Aún no has marcado un lugar.</p>
+
+        <label for="foto">Foto (opcional)</label>
+        <input id="foto" name="foto" type="file" accept="image/*" capture="environment" />
+
+        <!-- Campo trampa contra bots: una persona nunca lo ve ni lo llena -->
+        <div class="trampa" aria-hidden="true">
+          <label for="sitio_web">Sitio web</label>
+          <input id="sitio_web" name="sitio_web" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <p id="errores" class="error" role="alert" hidden></p>
+        <button type="submit" id="btn-enviar">Enviar reporte</button>
+      </form>
+
+      <section id="resultado" class="resultado" hidden aria-live="polite">
+        <h2>Reporte enviado</h2>
+        <p>Guarda este código para consultar el estado de tu reporte:</p>
+        <p id="codigo" class="codigo"></p>
+        <p><a href="/seguimiento.html">Ir a consultar un reporte</a></p>
+        <button type="button" id="btn-otro" class="secundario">Enviar otro reporte</button>
+      </section>
+    </main>
+
+    <script type="module" src="/src/reportar.js"></script>
+  </body>
+</html>

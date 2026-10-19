@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Panel del funcionario</title>
+    <link rel="stylesheet" href="/src/estilos.css" />
+  </head>
+  <body>
+    <header class="barra">
+      <strong>Reporte ambiental · Panel</strong>
+      <nav>
+        <span id="usuario"></span>
+        <button type="button" id="btn-salir" class="secundario" hidden>Cerrar sesión</button>
+      </nav>
+    </header>
+
+    <main class="contenedor ancho">
+      <!-- Vista de inicio de sesión -->
+      <section id="vista-login" class="tarjeta">
+        <h1>Panel del funcionario</h1>
+        <form id="form-login" novalidate>
+          <label for="correo">Correo</label>
+          <input id="correo" type="email" autocomplete="username" required />
+          <label for="clave">Contraseña</label>
+          <input id="clave" type="password" autocomplete="current-password" required />
+          <p id="error-login" class="error" role="alert" hidden></p>
+          <button type="submit">Entrar</button>
+        </form>
+      </section>
+
+      <!-- Vista del panel -->
+      <section id="vista-panel" hidden>
+        <h1>Reportes</h1>
+        <p id="resumen" class="ayuda" aria-live="polite"></p>
+
+        <div class="filtros">
+          <div>
+            <label for="f-tipo">Tipo</label>
+            <select id="f-tipo">
+              <option value="">Todos</option>
+              <option value="tala">Tala de árboles</option>
+              <option value="quema">Quema</option>
+              <option value="vertimiento">Vertimiento o contaminación del agua</option>
+              <option value="fauna">Fauna (caza o tráfico)</option>
+              <option value="residuos">Residuos</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-estado">Estado</label>
+            <select id="f-estado">
+              <option value="">Todos</option>
+              <option value="recibido">Recibido</option>
+              <option value="en_revision">En revisión</option>
+              <option value="atendido">Atendido</option>
+              <option value="descartado">Descartado</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-desde">Desde</label>
+            <input id="f-desde" type="date" />
+          </div>
+          <div>
+            <label for="f-hasta">Hasta</label>
+            <input id="f-hasta" type="date" />
+          </div>
+          <div class="filtros-acciones">
+            <button type="button" id="btn-limpiar" class="secundario">Limpiar</button>
+            <button type="button" id="btn-csv" class="secundario">Exportar CSV</button>
+          </div>
+        </div>
+
+        <div class="rejilla-panel">
+          <div id="mapa" role="application" aria-label="Mapa de reportes"></div>
+          <div class="tabla-contenedor">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Código</th>
+                </tr>
+              </thead>
+              <tbody id="filas"></tbody>
+            </table>
+            <p id="vacio" class="ayuda" hidden>No hay reportes con esos filtros.</p>
+          </div>
+        </div>
+
+        <section id="detalle" class="tarjeta" hidden>
+          <h2>Detalle del reporte</h2>
+          <dl>
+            <dt>Código</dt>
+            <dd id="d-codigo"></dd>
+            <dt>Tipo</dt>
+            <dd id="d-tipo"></dd>
+            <dt>Estado</dt>
+            <dd id="d-estado"></dd>
+            <dt>Recibido</dt>
+            <dd id="d-creado"></dd>
+            <dt>Ubicación</dt>
+            <dd id="d-ubicacion"></dd>
+            <dt>Descripción</dt>
+            <dd id="d-descripcion"></dd>
+          </dl>
+          <div id="d-foto"></div>
+
+          <h3>Historial</h3>
+          <ul id="d-historial" class="historial"></ul>
+
+          <h3>Cambiar estado</h3>
+          <form id="form-estado" novalidate>
+            <label for="n-estado">Nuevo estado</label>
+            <select id="n-estado">
+              <option value="recibido">Recibido</option>
+              <option value="en_revision">En revisión</option>
+              <option value="atendido">Atendido</option>
+              <option value="descartado">Descartado</option>
+            </select>
+            <label for="n-nota">Nota interna</label>
+            <textarea id="n-nota" rows="2" maxlength="500"></textarea>
+            <label for="n-publica">Nota para el ciudadano (opcional)</label>
+            <input id="n-publica" type="text" maxlength="300" />
+            <p id="error-estado" class="error" role="alert" hidden></p>
+            <button type="submit">Guardar cambio</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/src/panel.js"></script>
+  </body>
+</html>
