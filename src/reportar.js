@@ -78,8 +78,10 @@ let captchaNoCargo = false;
 let errorDeCaptchaVisible = false;
 const MENSAJE_CAPTCHA_NO_CARGO = 'No se pudo cargar la verificación de seguridad. Recargue la página.';
 
-// Los avisos del captcha se quitan solos cuando el recuadro entrega un token nuevo.
-function mostrarErrorDeCaptcha(texto) {
+// El aviso "Complete la verificación" se quita solo cuando el recuadro entrega un token. Los rechazos del servidor
+// NO: se quedan hasta el siguiente envío, porque el recuadro se reinicia solo y el token nuevo llega enseguida,
+// antes de que la persona alcance a leer qué pasó.
+function avisarFaltaDeCaptcha(texto) {
   mostrarErrores([texto]);
   errorDeCaptchaVisible = true;
 }
@@ -95,7 +97,7 @@ if (captchaActivo) {
     })
     .catch(() => {
       captchaNoCargo = true;
-      mostrarErrorDeCaptcha(MENSAJE_CAPTCHA_NO_CARGO);
+      mostrarErrores([MENSAJE_CAPTCHA_NO_CARGO]);
     });
 }
 
@@ -163,7 +165,8 @@ formulario.addEventListener('submit', async (evento) => {
   }
 
   if (captchaActivo && !tokenCaptcha) {
-    mostrarErrorDeCaptcha(captchaNoCargo ? MENSAJE_CAPTCHA_NO_CARGO : MENSAJES_CAPTCHA.captcha_requerido);
+    if (captchaNoCargo) mostrarErrores([MENSAJE_CAPTCHA_NO_CARGO]);
+    else avisarFaltaDeCaptcha(MENSAJES_CAPTCHA.captcha_requerido);
     return;
   }
 
@@ -184,8 +187,10 @@ formulario.addEventListener('submit', async (evento) => {
     mostrarResultado(codigo, { fotoSubida });
   } catch (error) {
     console.error(error);
-    if (MENSAJES_CAPTCHA[error.motivo]) {
-      mostrarErrorDeCaptcha(MENSAJES_CAPTCHA[error.motivo]);
+    if (error.motivo === 'captcha_requerido') {
+      avisarFaltaDeCaptcha(MENSAJES_CAPTCHA.captcha_requerido);
+    } else if (MENSAJES_CAPTCHA[error.motivo]) {
+      mostrarErrores([MENSAJES_CAPTCHA[error.motivo]]);
     } else if (error.motivo === 'datos_invalidos' && error.detalle) {
       mostrarErrores([error.detalle]);
     } else if (error.estado >= 500) {
