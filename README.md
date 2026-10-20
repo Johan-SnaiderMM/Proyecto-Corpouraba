@@ -10,7 +10,23 @@ Páginas:
 | --- | --- | --- |
 | `/` | `index.html` | Ciudadano: enviar un reporte |
 | `/seguimiento.html` | `seguimiento.html` | Ciudadano: ver su ticket (avance, evidencia de la Corporación) y validar si la acción se cumplió |
-| `/panel/` | `panel/index.html` | Funcionario: lista, mapa, filtros, cambio de estado, evidencia con foto, CSV |
+| `/panel/` | `panel/index.html` | Funcionario: lista, mapa, filtros, responsables, casos pendientes, cambio de estado, evidencia con foto, CSV |
+
+## Panel de trabajo: responsables y casos pendientes
+
+Para que el trabajo no se pierda entre varias personas, cada reporte puede tener un **responsable**:
+
+- **Tomar, soltar y asignar.** En el detalle de un reporte, "Tomar este caso" lo deja a nombre de quien lo toma; también se puede soltar o asignar a otra persona. Cada cambio queda en el historial interno ("Responsable — Ana tomó el caso"). **La persona que reportó no ve nada de esto**, y asignar no cambia la "última actualización" de su ticket.
+- **Reglas.** Si el caso no tiene responsable, cualquier funcionario puede tomarlo o asignarlo. Si ya lo tiene, solo ese responsable o un **coordinador** puede cambiarlo. Para nombrar a un coordinador, en el SQL Editor: `update staff set is_admin = true where user_id = 'EL-UUID';`. La base de datos hace cumplir estas reglas; el panel solo evita ofrecer lo que va a fallar.
+- **Mis casos.** El filtro "Responsable" tiene "Mis casos", "Sin responsable" y una opción por persona.
+- **Requieren atención.** El botón del mismo nombre (con su contador) deja solo los casos que necesitan atención, en este orden de importancia:
+  1. **Reabierto por la persona:** respondió "no conforme" y el caso no se ha vuelto a cerrar.
+  2. **Sin atender:** sigue "recibido" después de 2 días.
+  3. **Sin movimiento:** en revisión, sin cambios hace 7 días o más.
+
+  Cada caso muestra el motivo en texto en la tabla y en su detalle. Los plazos (2 y 7 días) son los valores por omisión de `report_attention()` en `supabase/asignacion.sql`.
+
+Si el panel se publica antes de ejecutar `asignacion.sql`, sigue funcionando: simplemente no muestra responsables ni pendientes.
 
 ## Ticket, evidencia y validación
 
@@ -37,7 +53,7 @@ Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.
    npm install
    ```
 
-2. Crear un proyecto en [Supabase](https://supabase.com). En **SQL Editor** pegar y ejecutar, en este orden, `supabase/schema.sql`, `supabase/seed.sql` y `supabase/seguimiento.sql` (esta última agrega el ticket, la evidencia y la validación; se puede ejecutar más de una vez sin problema).
+2. Crear un proyecto en [Supabase](https://supabase.com). En **SQL Editor** pegar y ejecutar, en este orden, `supabase/schema.sql`, `supabase/seed.sql`, `supabase/seguimiento.sql` (agrega el ticket, la evidencia y la validación) y `supabase/asignacion.sql` (agrega responsables de caso y casos pendientes). Los dos últimos se pueden ejecutar más de una vez sin problema.
 3. En **Authentication**:
    - Desactivar el registro público de usuarios (Providers > Email > desactivar "Allow new users to sign up").
    - Crear un usuario (Users > Add user) con correo y contraseña.
@@ -72,7 +88,7 @@ El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
 
 ## Datos de demostración
 
-Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, **después de haber registrado a una funcionaria en `staff`** (paso 4 de "Puesta en marcha"):
+Para ensayar la presentación hay 8 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, **después de haber registrado a una funcionaria en `staff`** (paso 4 de "Puesta en marcha"):
 
 1. Ejecute `supabase/demo.sql` en el SQL Editor de Supabase. Se puede repetir: borra y vuelve a crear los reportes DEMO con fechas relativas a hoy (por eso conviene cargarlo **el mismo día de la presentación**; las horas son de Colombia).
    Los 30 reportes genéricos de `seed.sql` quedan por encima de los DEMO en el panel (orden por fecha). Para que la demostración se vea limpia, bórrelos: `delete from reports where description like 'Reporte de prueba%';`
@@ -84,6 +100,8 @@ Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá
 
    Pide el correo y la contraseña de la funcionaria (la misma del panel; la contraseña no se muestra al escribirla) y usa la clave `anon` del `.env`: no necesita la clave `service_role`. Requiere **Node 22 o más nuevo**; si algo falla, el mensaje dice qué revisar.
 
+Los casos 1, 2, 3 y 6 quedan con responsable (la primera funcionaria de `staff` por orden alfabético); en el panel, **"Requieren atención"** muestra los casos 3, 7 y 8.
+
 Tickets para la demostración (se escriben con o sin guiones):
 
 | Ticket | Qué muestra |
@@ -94,6 +112,8 @@ Tickets para la demostración (se escriben con o sin guiones):
 | `DEMO-0004-RECI-BIDO` | Recién recibido |
 | `DEMO-0005-DESC-ARTA` | Descartado |
 | `DEMO-0006-REVI-SION` | En revisión, con una evidencia |
+| `DEMO-0007-SINA-TEND` | Recibido hace 4 días y nadie lo ha mirado (**sin atender**, sin responsable) |
+| `DEMO-0008-ESTA-NCAD` | En revisión, sin movimiento hace 9 días (**sin movimiento**, sin responsable) |
 
 Para quitarlos: `delete from reports where tracking_code like 'DEMO%';` (las fotos quedan en Storage, en `report-evidence`; bórrelas desde el panel de Supabase si lo desea). Sus códigos son fáciles de adivinar a propósito: no los use en un proyecto con datos reales.
 
@@ -177,4 +197,6 @@ El GPS y la cámara del celular exigen HTTPS, que el hosting incluye. Los proyec
 - Estadísticas con gráficas (Chart.js).
 - Instalación como app (manifest y service worker) y cola de reportes sin conexión.
 - Aviso en pantalla cuando llega un reporte nuevo.
+- Roles más finos que "coordinador" (por ejemplo, quién puede descartar o reabrir) y alta de funcionarios desde el panel: hoy se registran a mano en `staff`. Depende de cómo trabaje Corpouraba.
+- Reparto automático por territorial (Caribe, Centro, Nutibara, Urrao y Atrato), según el municipio del reporte.
 - Prueba de que Turnstile u otro CAPTCHA frena el spam, si hace falta.
