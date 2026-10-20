@@ -376,6 +376,11 @@ button:disabled {
   cursor: wait;
 }
 
+/* Un botón que no se puede usar porque la regla lo impide (no porque esté cargando) no muestra el reloj de espera. */
+.acciones-asignacion button:disabled {
+  cursor: not-allowed;
+}
+
 button.secundario {
   color: var(--azul);
   background: #ffffff;
@@ -846,6 +851,30 @@ button[aria-pressed='true']:hover {
 
 .acciones-asignacion select {
   min-width: 220px;
+  max-width: 100%;
+}
+
+#d-responsable {
+  font-weight: 700;
+}
+
+/* El responsable también va bajo el estado: en pantallas angostas la columna propia se oculta. */
+.responsable-linea {
+  display: none;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+#aviso-trabajo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+#aviso-trabajo button {
+  margin: 0;
 }
 
 #d-motivos {
@@ -971,6 +1000,10 @@ tbody tr.activa {
     display: none;
   }
 
+  .responsable-linea {
+    display: block;
+  }
+
   th,
   td {
     padding: 10px 6px;
@@ -1025,6 +1058,11 @@ tbody tr.activa {
   .tarjeta,
   .resultado {
     padding: 14px;
+  }
+
+  th,
+  td {
+    padding: 10px 4px;
   }
 
   .ticket {

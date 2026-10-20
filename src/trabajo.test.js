@@ -107,3 +107,87 @@ describe('responsables', () => {
     expect(puedeCambiarResponsable(reportes[2], YO, true)).toBe(true); // coordinador
   });
 });
+
+// ---- Casos límite (revisión de corrección) ----
+
+describe('"Mis casos" sin saber quién soy', () => {
+  it('con miId nulo o ausente no trae nada (ni los casos sin responsable)', () => {
+    expect(filtrar({ responsable: 'mios' }, { miId: null })).toEqual([]);
+    expect(filtrar({ responsable: 'mios' }, { miId: undefined })).toEqual([]);
+  });
+});
+
+describe('filtros de fecha en los bordes del día (hora local, como se muestran en la tabla)', () => {
+  // created_at llega de la base como instante UTC; el filtro compara con el día LOCAL de quien mira el panel.
+  const local = (a, m, d, h = 0, mi = 0, s = 0, ms = 0) => new Date(a, m - 1, d, h, mi, s, ms).toISOString();
+  const bordes = [
+    { id: 'antes', created_at: local(2026, 10, 11, 23, 59, 59, 999) },
+    { id: 'abre', created_at: local(2026, 10, 12, 0, 0, 0, 0) },
+    { id: 'medio', created_at: local(2026, 10, 13, 12) },
+    { id: 'cierra', created_at: local(2026, 10, 14, 23, 59, 59, 999) },
+    { id: 'despues', created_at: local(2026, 10, 15, 0, 0, 0, 0) },
+  ];
+  const f = (filtros) => ids(filtrarReportes(bordes, { ...sinFiltros, ...filtros }, { miId: YO }));
+
+  it('"desde" incluye el primer milisegundo del día y deja fuera el último del día anterior', () => {
+    expect(f({ desde: '2026-10-12' })).toEqual(['abre', 'medio', 'cierra', 'despues']);
+  });
+
+  it('"hasta" incluye el último milisegundo del día y deja fuera el primero del siguiente', () => {
+    expect(f({ hasta: '2026-10-14' })).toEqual(['antes', 'abre', 'medio', 'cierra']);
+  });
+
+  it('un solo día', () => {
+    expect(f({ desde: '2026-10-14', hasta: '2026-10-14' })).toEqual(['cierra']);
+  });
+
+  it('con desde posterior a hasta no sale nada', () => {
+    expect(f({ desde: '2026-10-14', hasta: '2026-10-12' })).toEqual([]);
+  });
+});
+
+describe('orden de los casos que necesitan atención: casos raros', () => {
+  it('un motivo desconocido o sin motivos queda después de los conocidos', () => {
+    // 'a' tiene un motivo que este código no conoce; 'b' una lista vacía; 'c' un motivo conocido de poca importancia.
+    const lista = ['a', 'b', 'c'].map((id) => ({ id, created_at: '2026-10-10T12:00:00', assigned_to: null }));
+    const orden = ids(filtrarReportes(lista, { ...sinFiltros, soloAtencion: true }, {
+      miId: YO,
+      atencion: mapaDeAtencion([
+        { report_id: 'a', motivos: ['inventado'], dias: 99 },
+        { report_id: 'b', motivos: [], dias: 99 },
+        { report_id: 'c', motivos: ['estancado'], dias: 7 },
+      ]),
+    }));
+    expect(orden[0]).toBe('c');
+    expect(orden.slice(1).sort()).toEqual(['a', 'b']);
+  });
+
+  it('los empates completos conservan el orden original (la lista ya viene de más nuevo a más viejo)', () => {
+    const lista = Array.from({ length: 40 }, (_, i) => ({ id: `r${i}`, created_at: '2026-10-10T12:00:00' }));
+    const atencion = mapaDeAtencion(lista.map((r) => ({ report_id: r.id, motivos: ['sin_atender'], dias: 3 })));
+    expect(ids(filtrarReportes(lista, { ...sinFiltros, soloAtencion: true }, { miId: YO, atencion }))).toEqual(lista.map((r) => r.id));
+  });
+
+  it('sin el botón activado el orden NO cambia aunque haya datos de atención', () => {
+    const atencion = mapaDeAtencion([
+      { report_id: '3', motivos: ['reabierto'], dias: 1 },
+      { report_id: '1', motivos: ['estancado'], dias: 50 },
+    ]);
+    expect(filtrar({}, { atencion })).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('un id que está en atención pero no en la lista (por ejemplo, fuera del límite de filas) no aparece ni rompe', () => {
+    const atencion = mapaDeAtencion([{ report_id: 'fantasma', motivos: ['reabierto'], dias: 1 }]);
+    expect(filtrar({ soloAtencion: true }, { atencion })).toEqual([]);
+  });
+
+  it('tolera filas incompletas de la base', () => {
+    const atencion = mapaDeAtencion([{ report_id: '1', motivos: null, dias: null }]);
+    expect(atencion.get('1')).toEqual({ motivos: [], dias: 0 });
+  });
+
+  it('un motivo que no existe se muestra tal cual, sin tropezar con propiedades de Object', () => {
+    expect(textoDelMotivo('constructor', 0)).toBe('constructor');
+    expect(textoDelMotivo('toString', 0)).toBe('toString');
+  });
+});

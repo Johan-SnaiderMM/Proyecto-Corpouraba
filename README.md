@@ -24,9 +24,14 @@ Para que el trabajo no se pierda entre varias personas, cada reporte puede tener
   2. **Sin atender:** sigue "recibido" después de 2 días.
   3. **Sin movimiento:** en revisión, sin cambios hace 7 días o más.
 
-  Cada caso muestra el motivo en texto en la tabla y en su detalle. Los plazos (2 y 7 días) son los valores por omisión de `report_attention()` en `supabase/asignacion.sql`.
+  Cada caso muestra el motivo en texto en la tabla y en su detalle. Los plazos (2 y 7 días) son los valores por omisión de `report_attention()` en `supabase/asignacion.sql`, y se cuentan en bloques de 24 horas desde la última actualización del caso.
 
-Si el panel se publica antes de ejecutar `asignacion.sql`, sigue funcionando: simplemente no muestra responsables ni pendientes.
+  Detalles que conviene saber: un caso deja de contar como *reabierto* en cuanto se guarda un nuevo estado (cualquiera); y guardar el mismo estado, aun sin nota, cuenta como movimiento y reinicia los plazos. Asignar o soltar un caso **no** reinicia los plazos: un caso con responsable que nadie ha trabajado sigue apareciendo como pendiente.
+- **Equipo.** Los nombres del equipo salen de `list_staff()`, que entrega nombre completo y si es coordinador a **todos** los funcionarios (hace falta para asignar). No guarde ahí nada más sensible que el nombre.
+- **Bajas.** Para dar de baja a un funcionario se borra su usuario (Authentication > Users, o `delete from auth.users where id = 'EL-UUID';`). Sus casos quedan sin responsable, con una nota en el historial ("Caso liberado: … ya no hace parte del equipo"), y su nombre se conserva en el historial anterior.
+- **Muchos reportes.** El panel carga los 5000 reportes más recientes (más los que requieren atención), dibuja como máximo 300 en la tabla y el mapa y lo avisa en pantalla; "Exportar CSV" incluye todos los filtrados. Si falla el cálculo de pendientes se muestra "(?)" y un botón para reintentar, nunca un "0" inventado.
+
+Si el panel se publica antes de ejecutar `asignacion.sql`, sigue funcionando: simplemente no muestra responsables ni pendientes. (En la consola del navegador puede verse un error 404 de `list_staff`: es lo esperado hasta que se ejecute ese archivo.)
 
 ## Ticket, evidencia y validación
 
@@ -75,7 +80,16 @@ Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.
    npm run dev
    ```
 
-Otros comandos: `npm test` (pruebas de validación y del ticket), `npm run build` (versión para publicar, en `dist/`).
+Otros comandos: `npm test` (pruebas de validación, del ticket y del panel de trabajo), `npm run build` (versión para publicar, en `dist/`).
+
+### Actualizar un proyecto que ya funciona
+
+Si el proyecto de Supabase ya tiene `schema.sql` y `seguimiento.sql`, para agregar el panel de trabajo ejecute, **en este orden**, primero la versión nueva de `supabase/seguimiento.sql` y después `supabase/asignacion.sql`. El segundo se niega a correr (y no cambia nada) si el primero no está actualizado: así el ciudadano nunca llega a ver las notas de asignación en su ticket. Ambos se pueden repetir sin problema.
+
+- Cada archivo espera como máximo 5 segundos por los bloqueos de las tablas y, si no los consigue, se detiene sin dejar cambios a medias: vuelva a ejecutarlo. Conviene correrlos fuera de horas de uso.
+- Nadie es coordinador al principio. Para nombrar uno: `update staff set is_admin = true where user_id = 'EL-UUID';`.
+- **Para deshacerlo** está `supabase/asignacion-reversa.sql`: guarda antes las asignaciones y los coordinadores en las tablas `respaldo_asignaciones` y `respaldo_coordinadores`, convierte las notas de asignación en notas normales y quita las columnas y funciones nuevas.
+- Los reportes de prueba que deja `seed.sql` (`Reporte de prueba …`) se pueden borrar antes de una presentación: `delete from reports where description like 'Reporte de prueba%';`.
 
 ## Identidad visual
 
@@ -112,8 +126,8 @@ Tickets para la demostración (se escriben con o sin guiones):
 | `DEMO-0004-RECI-BIDO` | Recién recibido |
 | `DEMO-0005-DESC-ARTA` | Descartado |
 | `DEMO-0006-REVI-SION` | En revisión, con una evidencia |
-| `DEMO-0007-SINA-TEND` | Recibido hace 4 días y nadie lo ha mirado (**sin atender**, sin responsable) |
-| `DEMO-0008-ESTA-NCAD` | En revisión, sin movimiento hace 9 días (**sin movimiento**, sin responsable) |
+| `DEMO-0007-SINA-TEND` | Recibido hace unos 4 días y nadie lo ha mirado (**sin atender**, sin responsable) |
+| `DEMO-0008-ESTA-NCAD` | En revisión, sin movimiento hace más de una semana (**sin movimiento**, sin responsable) |
 
 Para quitarlos: `delete from reports where tracking_code like 'DEMO%';` (las fotos quedan en Storage, en `report-evidence`; bórrelas desde el panel de Supabase si lo desea). Sus códigos son fáciles de adivinar a propósito: no los use en un proyecto con datos reales.
 
@@ -122,7 +136,7 @@ Para quitarlos: `delete from reports where tracking_code like 'DEMO%';` (las fot
 | Qué | Cómo | Qué comprueba |
 | --- | --- | --- |
 | Web | `npm test` y `npm run build` | Ticket, validaciones del formulario, lógica del captcha y que el sitio compile |
-| Base de datos | `bash supabase/tests/ejecutar.sh` | Carga el SQL en un Postgres de verdad y comprueba permisos (RLS), que no se filtren notas internas, la validación del ciudadano, los datos de demostración y el captcha |
+| Base de datos | `bash supabase/tests/ejecutar.sh` | Carga el SQL en un Postgres de verdad y comprueba permisos (RLS), que no se filtren notas internas, la validación del ciudadano, las reglas de responsables y casos pendientes, la baja de funcionarios, la reversa, los datos de demostración y el captcha |
 
 En GitHub se ejecutan solas en cada subida (`.github/workflows/ci.yml`): el resultado se ve en la pestaña **Actions** y como marca verde o X roja junto a cada commit. Las pruebas web piden Node 22. Para correr las de la base de datos en su computador hace falta `psql` y un Postgres 14 o más nuevo (las variables `PGHOST`, `PGUSER`, etc. indican a cuál conectarse).
 

@@ -61,7 +61,7 @@ select assign_report(:'rid', '33333333-3333-3333-3333-333333333333');   -- el re
 reset role;
 reset request.jwt.claim.sub;
 select pruebas.esperar((select assigned_to from reports where id = :'rid') = '33333333-3333-3333-3333-333333333333', 'el responsable puede pasar el caso a otra persona');
-select pruebas.esperar((select note from report_events where report_id = :'rid' and kind = 'asignacion' order by id desc limit 1) = 'Funcionaria de prueba asignó el caso a Segunda funcionaria',
+select pruebas.esperar((select note from report_events where report_id = :'rid' and kind = 'asignacion' order by id desc limit 1) = 'Funcionaria de prueba pasó el caso a Segunda funcionaria',
   'el historial dice quién lo pasó y a quién');
 
 set role authenticated;
@@ -75,6 +75,8 @@ select assign_report(:'rid', '44444444-4444-4444-4444-444444444444');   -- el co
 reset role;
 reset request.jwt.claim.sub;
 select pruebas.esperar((select assigned_to from reports where id = :'rid') = '44444444-4444-4444-4444-444444444444', 'un coordinador puede reasignar aunque el caso sea de otra persona');
+select pruebas.esperar((select note from report_events where report_id = :'rid' and kind = 'asignacion' order by id desc limit 1) = 'Coordinador de prueba tomó el caso de Segunda funcionaria',
+  'el historial dice de quién venía el caso');
 set role authenticated;
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select assign_report(:'rid', null);
@@ -185,4 +187,87 @@ select pruebas.esperar(has_function_privilege('authenticated', 'assign_report(uu
 select pruebas.esperar((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                         where n.nspname = 'public' and p.prosecdef and not coalesce('search_path=public, pg_temp' = any (p.proconfig), false)) = 0,
   'todas las funciones SECURITY DEFINER (también las nuevas) fijan search_path con pg_temp');
+\echo '-- Nadie puede saltarse las reglas escribiendo directamente en las tablas'
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+declare n int;
+begin
+  update staff set is_admin = true where user_id = '11111111-1111-1111-1111-111111111111';
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALLÓ: una funcionaria pudo ponerse como coordinadora (UPDATE en staff)'; end if;
+  raise notice 'ok: nadie se nombra coordinador con un UPDATE directo';
+
+  update reports set assigned_to = '11111111-1111-1111-1111-111111111111', assigned_at = now();
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALLÓ: se cambió assigned_to con un UPDATE directo'; end if;
+  raise notice 'ok: tampoco se cambia el responsable con un UPDATE directo';
+
+  delete from reports;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALLÓ: una funcionaria pudo borrar reportes'; end if;
+  delete from staff;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALLÓ: una funcionaria pudo borrar funcionarios'; end if;
+  raise notice 'ok: no se borran reportes ni funcionarios directamente';
+end $$;
+select pruebas.esperar_error($q$insert into staff (user_id, full_name, is_admin) values (gen_random_uuid(), 'Intrusa', true)$q$, 'row-level security', 'nadie se agrega a staff directamente');
+select pruebas.esperar_error(format($q$insert into report_events (report_id, status, note, kind) values (%L, 'atendido', 'falsa', 'asignacion')$q$, :'rid'), 'row-level security', 'ni inventa eventos en el historial');
+reset role;
+reset request.jwt.claim.sub;
+
+\echo '-- Otras funciones no tocan al responsable, y la asignación deja su huella'
+select pruebas.esperar(pg_get_functiondef('assign_report(uuid, uuid)'::regprocedure) ilike '%from reports where id = p_report for update%', 'assign_report bloquea la fila del reporte (dos personas no toman el mismo caso a la vez)');
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select assign_report(:'rid', '11111111-1111-1111-1111-111111111111');
+select change_status(:'rid', 'en_revision', 'x', 'Se revisa');
+select add_evidence(:'rid', :'rid' || '/' || gen_random_uuid() || '.jpg', 'Visita al sitio');
+reset role;
+reset request.jwt.claim.sub;
+select pruebas.esperar((select assigned_to from reports where id = :'rid') = '11111111-1111-1111-1111-111111111111', 'cambiar el estado o subir evidencia no cambia el responsable');
+select pruebas.esperar((select count(*) from report_events where report_id = :'rid' and kind = 'asignacion' and staff_id is null) = 0, 'cada asignación guarda quién la hizo');
+
+\echo '-- Restricciones de la tabla'
+select pruebas.esperar_error(format($q$update reports set assigned_to = '11111111-1111-1111-1111-111111111111', assigned_at = null where id = %L$q$, :'rid'),
+  'reports_responsable_coherente', 'no hay responsable sin fecha de asignación');
+select pruebas.esperar_error(format($q$update reports set assigned_to = null where id = %L$q$, :'rid'), 'reports_responsable_coherente', 'ni fecha sin responsable');
+
+\echo '-- El ticket de la persona se protege en dos capas'
+insert into report_events (report_id, status, note, public_note, kind) values (:'rid', 'en_revision', 'x', 'TEXTO-DE-ASIGNACION-QUE-NO-DEBE-SALIR', 'asignacion');
+insert into report_events (report_id, status, note, public_note, kind) values (:'rid', 'en_revision', 'x', '   ', 'nota');
+insert into report_events (report_id, status, note, public_note, kind) values (:'rid', 'en_revision', 'x', null, 'nota');
+set role anon;
+select pruebas.esperar(position('TEXTO-DE-ASIGNACION' in get_report_tracking(:'codigo')::text) = 0, 'una asignación jamás sale en el ticket, aunque traiga texto público');
+reset role;
+select count(*) as visibles_antes from (select 1) x \gset
+set role anon;
+select jsonb_array_length(get_report_tracking(:'codigo') -> 'eventos') as eventos_ticket \gset
+reset role;
+select pruebas.esperar(:eventos_ticket = (select count(*) from report_events where report_id = :'rid' and kind in ('estado', 'validacion')),
+  'ni las notas vacías o solo con espacios: el ticket muestra solo estados y respuestas');
+
+\echo '-- Dar de baja a un funcionario no rompe nada ni borra el trabajo'
+insert into auth.users (id) values ('66666666-6666-6666-6666-666666666666');
+insert into staff (user_id, full_name) values ('66666666-6666-6666-6666-666666666666', 'Funcionario que se va');
+set role anon;
+select create_report('tala', 'Reporte de quien se va del equipo', 7.8, -76.6, null) as codigo_baja \gset
+reset role;
+select id as rbaja from reports where tracking_code = :'codigo_baja' \gset
+set role authenticated;
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';
+select assign_report(:'rbaja', '66666666-6666-6666-6666-666666666666');
+select change_status(:'rbaja', 'en_revision', 'revisé', 'Se revisa');
+select add_evidence(:'rbaja', :'rbaja' || '/' || gen_random_uuid() || '.jpg', 'Visita antes de irme');
+reset role;
+reset request.jwt.claim.sub;
+delete from auth.users where id = '66666666-6666-6666-6666-666666666666';
+select pruebas.esperar(not exists (select 1 from staff where user_id = '66666666-6666-6666-6666-666666666666'), 'se pudo dar de baja a un funcionario que ya tenía trabajo');
+select pruebas.esperar((select assigned_to is null and assigned_at is null from reports where id = :'rbaja'), 'su caso queda sin responsable (y sin fecha)');
+select pruebas.esperar((select note from report_events where report_id = :'rbaja' and kind = 'asignacion' order by id desc limit 1) = 'Caso liberado: Funcionario que se va ya no hace parte del equipo',
+  'el historial avisa que el caso quedó libre');
+select pruebas.esperar((select count(*) from report_events where report_id = :'rbaja' and kind = 'estado') = 2 and (select count(*) from report_evidence where report_id = :'rbaja') = 1,
+  'sus cambios de estado y su evidencia se conservan');
+select pruebas.esperar((select count(*) from report_events where report_id = :'rbaja' and staff_id is not null) = 0 and (select count(*) from report_evidence where report_id = :'rbaja' and staff_id is not null) = 0,
+  'pero quedan sin nombre');
 \echo '-- Asignación: TODO OK'

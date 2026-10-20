@@ -35,6 +35,19 @@ sql -f "$AQUI/seguimiento.test.sql" >/dev/null
 echo "== Pruebas de la asignación y los casos pendientes"
 sql -f "$AQUI/asignacion.test.sql" >/dev/null
 
+echo "== Casos que necesitan atención: bordes, empates, plazos y zonas horarias"
+sql -f "$AQUI/atencion.test.sql" >/dev/null
+
+echo "== asignacion.sql debe negarse a correr sobre una versión vieja de seguimiento.sql"
+sql -c "create or replace function get_report_tracking(p_code text) returns jsonb language sql as 'select null::jsonb'"
+if sql -f "$SQL/asignacion.sql" >/dev/null 2>&1; then
+  echo "FALLÓ: asignacion.sql se ejecutó sobre un seguimiento.sql viejo (aparecerían asignaciones en el ticket)" >&2
+  exit 1
+fi
+sql -f "$SQL/seguimiento.sql"
+echo "== ...y con la versión nueva vuelve a funcionar"
+sql -f "$SQL/asignacion.sql"
+
 echo "== Datos de demostración (dos veces)"
 sql -f "$SQL/demo.sql"
 sql -f "$SQL/demo.sql"
@@ -54,6 +67,14 @@ sql -f "$AQUI/captcha-desactivado.test.sql" >/dev/null
 
 echo "== Captcha: volver a activar (y repetirlo)"
 sql -f "$SQL/captcha.sql"
+sql -f "$SQL/captcha.sql"
+sql -f "$AQUI/captcha.test.sql" >/dev/null
+
+echo "== Reversa de asignacion.sql: se puede deshacer, repetir y volver a instalar"
+sql -f "$SQL/asignacion-reversa.sql"
+sql -f "$SQL/asignacion-reversa.sql"
+sql -f "$AQUI/asignacion-reversa.test.sql" >/dev/null
+sql -f "$SQL/asignacion.sql"
 sql -f "$SQL/captcha.sql"
 sql -f "$AQUI/captcha.test.sql" >/dev/null
 

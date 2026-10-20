@@ -87,6 +87,12 @@
           </div>
         </div>
 
+        <p id="aviso-trabajo" class="aviso" role="status" hidden>
+          <span id="texto-aviso-trabajo"></span>
+          <button type="button" id="btn-reintentar" class="secundario">Reintentar</button>
+        </p>
+        <p id="aviso-lista" class="ayuda" role="status" hidden></p>
+
         <div class="rejilla-panel">
           <div id="mapa" role="application" aria-label="Mapa de reportes"></div>
           <div class="tabla-contenedor">
@@ -131,19 +137,20 @@
 
           <div id="bloque-asignacion">
             <h3>Responsable</h3>
-            <p id="d-responsable"></p>
+            <p id="d-responsable" tabindex="-1"></p>
             <p id="aviso-asignacion" class="ayuda" hidden></p>
             <div class="acciones-asignacion">
-              <button type="button" id="btn-tomar" class="secundario">Tomar este caso</button>
-              <button type="button" id="btn-soltar" class="secundario" hidden>Soltar el caso</button>
+              <button type="button" id="btn-tomar" class="secundario" aria-describedby="aviso-asignacion">Tomar este caso</button>
+              <button type="button" id="btn-soltar" class="secundario" aria-describedby="aviso-asignacion" hidden>Soltar el caso</button>
             </div>
             <div class="acciones-asignacion">
               <div>
                 <label for="r-asignar">Asignar a otra persona</label>
-                <select id="r-asignar"></select>
+                <select id="r-asignar" aria-describedby="aviso-asignacion"></select>
               </div>
-              <button type="button" id="btn-asignar" class="secundario">Asignar</button>
+              <button type="button" id="btn-asignar" class="secundario" aria-describedby="aviso-asignacion">Asignar</button>
             </div>
+            <p id="estado-asignacion" class="ayuda" role="status"></p>
             <p id="error-asignacion" class="error" role="alert" hidden></p>
           </div>
 

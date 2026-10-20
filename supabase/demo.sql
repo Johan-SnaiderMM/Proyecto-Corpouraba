@@ -12,10 +12,11 @@
 --   DEMO-0004-RECI-BIDO  recién recibido
 --   DEMO-0005-DESC-ARTA  descartado
 --   DEMO-0006-REVI-SION  en revisión, con una evidencia
---   DEMO-0007-SINA-TEND  recibido hace 4 días sin que nadie lo atienda ("sin atender", sin responsable)
---   DEMO-0008-ESTA-NCAD  en revisión sin movimiento hace 9 días ("sin movimiento", sin responsable)
+--   DEMO-0007-SINA-TEND  recibido hace unos 4 días sin que nadie lo atienda ("sin atender", sin responsable)
+--   DEMO-0008-ESTA-NCAD  en revisión sin movimiento hace más de una semana ("sin movimiento", sin responsable)
 -- Los casos 1, 2, 3 y 6 tienen responsable (la funcionaria que aparece primero en "staff" por nombre).
--- En el panel, "Requieren atención" muestra: el 3 (reabierto), el 7 y el 8.
+-- En el panel, "Requieren atención" muestra: el 3 (reabierto), el 7 y el 8. Los días se cuentan desde que se ejecuta este archivo:
+-- para una presentación, ejecútelo el mismo día (los plazos corren en bloques de 24 horas).
 --
 -- Para quitarlos:  delete from reports where tracking_code like 'DEMO%';
 -- Son códigos fáciles de adivinar a propósito: no los use en un proyecto con datos reales.

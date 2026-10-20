@@ -2,6 +2,9 @@
 -- Se ejecuta UNA vez, en el SQL Editor de Supabase, DESPUÉS de schema.sql (y de seed.sql si lo usas).
 -- Es seguro volver a ejecutarlo: usa "if not exists" y "create or replace".
 
+-- Si otra sesión tiene tablas ocupadas, mejor fallar pronto que dejar esperando a quien envía un reporte.
+set lock_timeout = '5s';
+
 -- ============================================================
 -- 1. Cambios en tablas existentes
 -- ============================================================
@@ -190,8 +193,9 @@ begin
                        order by e.created_at, e.id)
       from report_events e
       -- Se muestra lo que es del ciudadano (cambios de estado y su propia respuesta) y cualquier nota que tenga
-      -- texto público. Todo lo demás (asignaciones, notas internas) queda fuera.
-      where e.report_id = r.id and (e.kind in ('estado', 'validacion') or e.public_note is not null)), '[]'::jsonb),
+      -- texto público. Las asignaciones (kind <> 'asignacion') y las notas internas nunca salen, pase lo que pase.
+      where e.report_id = r.id and e.kind <> 'asignacion'
+        and (e.kind in ('estado', 'validacion') or nullif(trim(e.public_note), '') is not null)), '[]'::jsonb),
     'evidencias', coalesce((
       select jsonb_agg(jsonb_build_object('ruta', v.storage_path, 'descripcion', v.caption, 'fecha', v.created_at)
                        order by v.created_at, v.id)

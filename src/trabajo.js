@@ -18,7 +18,7 @@ export function mapaDeAtencion(filas) {
 
 // "Reabierto por la persona", "Sin atender hace 3 días", ...
 export function textoDelMotivo(motivo, dias) {
-  const base = MOTIVOS[motivo] ?? motivo;
+  const base = Object.hasOwn(MOTIVOS, motivo) ? MOTIVOS[motivo] : motivo;
   if ((motivo === 'sin_atender' || motivo === 'estancado') && dias > 0) {
     return `${base} hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
   }
@@ -59,7 +59,8 @@ export function filtrarReportes(reportes, filtros, { miId, atencion = new Map() 
       (!desde || creado >= desde) &&
       (!hasta || creado <= hasta) &&
       (!responsable ||
-        (responsable === 'mios' && r.assigned_to === miId) ||
+        // Sin saber quién soy (miId nulo) "Mis casos" no trae nada: null === null haría pasar los casos sin responsable.
+        (responsable === 'mios' && miId != null && r.assigned_to === miId) ||
         (responsable === 'sin' && !r.assigned_to) ||
         r.assigned_to === responsable) &&
       (!soloAtencion || atencion.has(r.id))
