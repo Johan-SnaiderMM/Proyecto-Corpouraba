@@ -24,10 +24,16 @@ sql -f "$SQL/seed.sql"
 sql -f "$SQL/seguimiento.sql"
 echo "== seguimiento.sql por segunda vez (debe poder repetirse)"
 sql -f "$SQL/seguimiento.sql"
+sql -f "$SQL/asignacion.sql"
+echo "== asignacion.sql por segunda vez (debe poder repetirse)"
+sql -f "$SQL/asignacion.sql"
 
 echo "== Pruebas del seguimiento"
 sql -f "$AQUI/ayudas.sql"
 sql -f "$AQUI/seguimiento.test.sql" >/dev/null
+
+echo "== Pruebas de la asignación y los casos pendientes"
+sql -f "$AQUI/asignacion.test.sql" >/dev/null
 
 echo "== Datos de demostración (dos veces)"
 sql -f "$SQL/demo.sql"

@@ -3,6 +3,7 @@ import { crearMapa, crearCapa, dibujarReportes, enfocar } from './mapa.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
 import { comprimirFoto } from './foto.js';
 import { formatearCodigo } from './ticket.js';
+import { filtrarReportes, mapaDeAtencion, nombreDelResponsable, puedeCambiarResponsable, textoDelMotivo } from './trabajo.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,6 +14,15 @@ let reportes = [];
 let visibles = [];
 let activoId = null;
 
+// Trabajo en equipo: quién es quién, quién soy yo y qué casos necesitan atención.
+let personal = [];
+let miId = null;
+let soyCoordinador = false;
+let atencion = new Map();
+let soloAtencion = false;
+// Si el SQL de asignación (supabase/asignacion.sql) aún no se ejecutó, el panel sigue funcionando sin esas partes.
+let trabajoDisponible = false;
+
 // ---------- Sesión ----------
 
 // Borra todo lo de la sesión anterior (lista, detalle e historial con notas internas) al cerrar sesión.
@@ -20,6 +30,8 @@ function limpiarPanel() {
   activoId = null;
   reportes = [];
   visibles = [];
+  atencion = new Map();
+  soloAtencion = false;
   marcadores = new Map();
   capa?.clearLayers();
   $('detalle').hidden = true;
@@ -72,6 +84,7 @@ async function entrar() {
   $('vista-panel').hidden = false;
   $('btn-salir').hidden = false;
   $('usuario').textContent = perfil.full_name;
+  await cargarPersonal();
 
   // El mapa se crea ya visible, para que Leaflet calcule bien su tamaño.
   if (!mapa) {
@@ -80,6 +93,46 @@ async function entrar() {
   }
   mapa.invalidateSize();
   await cargarReportes();
+}
+
+// ---------- Personal y casos que necesitan atención ----------
+
+async function cargarPersonal() {
+  const { data: sesion } = await supabase.auth.getSession();
+  miId = sesion.session?.user?.id ?? null;
+
+  const { data, error } = await supabase.rpc('list_staff');
+  trabajoDisponible = !error && Array.isArray(data);
+  personal = trabajoDisponible ? data : [];
+  soyCoordinador = Boolean(personal.find((p) => p.user_id === miId)?.is_admin);
+
+  // Sin el SQL de asignación no hay responsables: se esconden sus filtros, botones y columna en vez de mostrar datos falsos.
+  $('vista-panel').classList.toggle('sin-trabajo', !trabajoDisponible);
+  $('filtro-responsable').hidden = !trabajoDisponible;
+  $('btn-atencion').hidden = !trabajoDisponible;
+  $('bloque-asignacion').hidden = !trabajoDisponible;
+
+  // Una opción por persona, además de "Todos", "Mis casos" y "Sin responsable".
+  const selector = $('f-responsable');
+  selector.querySelectorAll('option[data-persona]').forEach((o) => o.remove());
+  const asignar = $('r-asignar');
+  asignar.replaceChildren(new Option('Elija una persona', ''));
+  for (const persona of personal) {
+    const opcion = new Option(persona.user_id === miId ? `${persona.full_name} (usted)` : persona.full_name, persona.user_id);
+    opcion.dataset.persona = 'si';
+    selector.append(opcion.cloneNode(true));
+    asignar.append(new Option(persona.user_id === miId ? `${persona.full_name} (usted)` : persona.full_name, persona.user_id));
+  }
+}
+
+async function cargarAtencion() {
+  if (!trabajoDisponible) {
+    atencion = new Map();
+    return;
+  }
+  const { data, error } = await supabase.rpc('report_attention');
+  if (error) console.error(error);
+  atencion = mapaDeAtencion(error ? [] : data);
 }
 
 // ---------- Lista, mapa y filtros ----------
@@ -95,24 +148,23 @@ async function cargarReportes() {
     return;
   }
   reportes = data;
+  await cargarAtencion();
   aplicarFiltros();
 }
 
 function aplicarFiltros() {
-  const tipo = $('f-tipo').value;
-  const estado = $('f-estado').value;
-  const desde = $('f-desde').value ? new Date(`${$('f-desde').value}T00:00:00`) : null;
-  const hasta = $('f-hasta').value ? new Date(`${$('f-hasta').value}T23:59:59.999`) : null;
-
-  visibles = reportes.filter((r) => {
-    const creado = new Date(r.created_at);
-    return (
-      (!tipo || r.type === tipo) &&
-      (!estado || r.status === estado) &&
-      (!desde || creado >= desde) &&
-      (!hasta || creado <= hasta)
-    );
-  });
+  visibles = filtrarReportes(
+    reportes,
+    {
+      tipo: $('f-tipo').value,
+      estado: $('f-estado').value,
+      desde: $('f-desde').value,
+      hasta: $('f-hasta').value,
+      responsable: trabajoDisponible ? $('f-responsable').value : '',
+      soloAtencion,
+    },
+    { miId, atencion }
+  );
 
   dibujarTabla();
   marcadores = dibujarReportes(capa, visibles, elegir);
@@ -124,7 +176,12 @@ function resumir() {
     const cantidad = visibles.filter((r) => r.status === clave).length;
     return `${nombre}: ${cantidad}`;
   });
-  $('resumen').textContent = `${visibles.length} de ${reportes.length} reportes · ${partes.join(' · ')}`;
+  const pendientes = trabajoDisponible ? ` · ${atencion.size} requieren atención` : '';
+  $('resumen').textContent = `${visibles.length} de ${reportes.length} reportes · ${partes.join(' · ')}${pendientes}`;
+
+  const boton = $('btn-atencion');
+  boton.textContent = `Requieren atención (${atencion.size})`;
+  boton.setAttribute('aria-pressed', String(soloAtencion));
 }
 
 function dibujarTabla() {
@@ -141,11 +198,15 @@ function dibujarTabla() {
       fila.setAttribute('aria-current', 'true');
     }
 
-    for (const texto of [fecha(r.created_at), TIPOS[r.type], ESTADOS[r.status], formatearCodigo(r.tracking_code)]) {
+    const celdas = [fecha(r.created_at), TIPOS[r.type], ESTADOS[r.status], nombreDelResponsable(r, personal, miId), formatearCodigo(r.tracking_code)];
+    celdas.forEach((texto, i) => {
       const celda = document.createElement('td');
       celda.textContent = texto;
+      // Junto al estado se escribe, con palabras, por qué el caso necesita atención (el color solo no basta).
+      const aviso = atencion.get(r.id);
+      if (i === 2 && aviso) celda.append(etiquetaDeAtencion(aviso));
       fila.append(celda);
-    }
+    });
 
     fila.addEventListener('click', () => elegir(r.id));
     fila.addEventListener('keydown', (e) => {
@@ -158,10 +219,25 @@ function dibujarTabla() {
   }
 }
 
-['f-tipo', 'f-estado', 'f-desde', 'f-hasta'].forEach((id) => $(id).addEventListener('change', aplicarFiltros));
+// El motivo más importante del caso, como una etiqueta de texto.
+function etiquetaDeAtencion(aviso) {
+  const motivo = ['reabierto', 'sin_atender', 'estancado'].find((m) => aviso.motivos.includes(m)) ?? aviso.motivos[0];
+  const etiqueta = document.createElement('span');
+  etiqueta.className = `etiqueta-atencion etiqueta-${motivo}`;
+  etiqueta.textContent = textoDelMotivo(motivo, aviso.dias);
+  return etiqueta;
+}
+
+['f-tipo', 'f-estado', 'f-responsable', 'f-desde', 'f-hasta'].forEach((id) => $(id).addEventListener('change', aplicarFiltros));
+
+$('btn-atencion').addEventListener('click', () => {
+  soloAtencion = !soloAtencion;
+  aplicarFiltros();
+});
 
 $('btn-limpiar').addEventListener('click', () => {
-  ['f-tipo', 'f-estado', 'f-desde', 'f-hasta'].forEach((id) => ($(id).value = ''));
+  ['f-tipo', 'f-estado', 'f-responsable', 'f-desde', 'f-hasta'].forEach((id) => ($(id).value = ''));
+  soloAtencion = false;
   aplicarFiltros();
 });
 
@@ -188,6 +264,7 @@ async function elegir(id) {
   $('d-creado').textContent = fecha(reporte.created_at);
   $('d-ubicacion').textContent = `${reporte.lat.toFixed(5)}, ${reporte.lng.toFixed(5)}`;
   $('d-descripcion').textContent = reporte.description;
+  mostrarAsignacion(reporte);
   $('n-estado').value = reporte.status;
   $('n-nota').value = '';
   $('n-publica').value = '';
@@ -216,6 +293,82 @@ async function elegir(id) {
   $('d-evidencias').replaceChildren(...(evidencias ?? [itemAviso('No se pudo cargar la evidencia.')]));
   $('d-sin-evidencias').hidden = evidencias === null || evidencias.length > 0;
 }
+
+// ---------- Responsable del caso ----------
+
+// Muestra quién tiene el caso, por qué necesita atención y qué botones puede usar esta persona.
+// Las mismas reglas las impone la base de datos; aquí solo se evita ofrecer lo que va a fallar.
+function mostrarAsignacion(reporte) {
+  const aviso = atencion.get(reporte.id);
+  $('d-atencion').hidden = !trabajoDisponible || !aviso;
+  $('d-motivos').replaceChildren(
+    ...(aviso?.motivos ?? []).map((motivo) => {
+      const item = document.createElement('li');
+      item.textContent = textoDelMotivo(motivo, aviso.dias);
+      return item;
+    })
+  );
+  if (!trabajoDisponible) return;
+
+  const puede = puedeCambiarResponsable(reporte, miId, soyCoordinador);
+  const mio = reporte.assigned_to === miId;
+  $('d-responsable').textContent = nombreDelResponsable(reporte, personal, miId);
+  $('btn-tomar').hidden = mio;
+  $('btn-soltar').hidden = !reporte.assigned_to;
+  for (const id of ['btn-tomar', 'btn-soltar', 'r-asignar', 'btn-asignar']) $(id).disabled = !puede;
+  $('r-asignar').value = '';
+
+  const aviso2 = $('aviso-asignacion');
+  aviso2.hidden = puede;
+  aviso2.textContent = puede ? '' : `Lo atiende ${nombreDelResponsable(reporte, personal, miId)}. Solo esa persona o un coordinador pueden cambiarlo.`;
+  mostrarError('error-asignacion', '');
+}
+
+let asignando = false;
+
+// destino: el id de la persona, o null para soltar el caso.
+async function cambiarResponsable(destino) {
+  const id = activoId;
+  if (!id || asignando) return;
+  asignando = true;
+  mostrarError('error-asignacion', '');
+  const botones = ['btn-tomar', 'btn-soltar', 'btn-asignar'].map($);
+  botones.forEach((b) => (b.disabled = true));
+  try {
+    const { error } = await supabase.rpc('assign_report', { p_report: id, p_to: destino });
+    if (error) {
+      console.error(error);
+      const otra = /otra persona/.test(error.message ?? '');
+      if (activoId === id) {
+        mostrarError('error-asignacion', otra ? 'Ese caso lo atiende otra persona. Actualice la lista.' : 'No se pudo cambiar el responsable.');
+      }
+    }
+    // Se recarga la lista (y con ella los casos pendientes) y se repinta el responsable y el historial sin perder lo
+    // que la persona estaba escribiendo en los formularios del caso.
+    await cargarReportes();
+    const reporte = reportes.find((r) => r.id === id);
+    if (activoId === id && reporte) {
+      mostrarAsignacion(reporte);
+      const historial = await cargarHistorial(reporte);
+      if (activoId === id) $('d-historial').replaceChildren(...(historial ?? [itemAviso('No se pudo cargar el historial.')]));
+    }
+  } finally {
+    asignando = false;
+    const reporte = reportes.find((r) => r.id === activoId);
+    if (reporte) mostrarAsignacion(reporte);
+  }
+}
+
+$('btn-tomar').addEventListener('click', () => cambiarResponsable(miId));
+$('btn-soltar').addEventListener('click', () => cambiarResponsable(null));
+$('btn-asignar').addEventListener('click', () => {
+  const destino = $('r-asignar').value;
+  if (!destino) {
+    mostrarError('error-asignacion', 'Elija a quién asignar el caso.');
+    return;
+  }
+  cambiarResponsable(destino);
+});
 
 function itemAvisoTexto(texto) {
   const parrafo = document.createElement('p');
@@ -264,6 +417,11 @@ async function cargarHistorial(reporte) {
   if (error) return null;
   return data.map((evento) => {
     const item = document.createElement('li');
+    if (evento.kind === 'asignacion') {
+      // Cambios de responsable: se muestran como tales, sin repetir el estado del caso.
+      item.textContent = `${fecha(evento.created_at)} · Responsable — ${evento.note}`;
+      return item;
+    }
     const quien = evento.kind === 'validacion' ? 'Ciudadano · ' : '';
     item.textContent = `${fecha(evento.created_at)} · ${quien}${ESTADOS[evento.status]}${evento.note ? ` — ${evento.note}` : ''}`;
     return item;
@@ -383,9 +541,18 @@ function celdaCsv(valor) {
 }
 
 $('btn-csv').addEventListener('click', () => {
-  const encabezado = ['codigo', 'tipo', 'estado', 'fecha', 'lat', 'lng', 'descripcion'];
+  const encabezado = ['codigo', 'tipo', 'estado', ...(trabajoDisponible ? ['responsable'] : []), 'fecha', 'lat', 'lng', 'descripcion'];
   const filas = visibles.map((r) =>
-    [r.tracking_code, TIPOS[r.type], ESTADOS[r.status], r.created_at, r.lat, r.lng, r.description]
+    [
+      r.tracking_code,
+      TIPOS[r.type],
+      ESTADOS[r.status],
+      ...(trabajoDisponible ? [nombreDelResponsable(r, personal, miId)] : []),
+      r.created_at,
+      r.lat,
+      r.lng,
+      r.description,
+    ]
       .map(celdaCsv)
       .join(',')
   );

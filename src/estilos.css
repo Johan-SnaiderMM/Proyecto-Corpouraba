@@ -781,6 +781,65 @@ tbody tr {
   cursor: pointer;
 }
 
+/* Etiquetas de "este caso necesita atención": siempre con texto, el color solo refuerza. */
+.etiqueta-atencion {
+  display: block;
+  width: fit-content;
+  padding: 2px 8px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  border-radius: 999px;
+}
+
+.etiqueta-reabierto {
+  color: #8a1c14;
+  background: #fbe4e2;
+}
+
+.etiqueta-sin_atender {
+  color: #7a3d00;
+  background: #fff1d6;
+}
+
+.etiqueta-estancado {
+  color: var(--azul);
+  background: var(--niebla-azul);
+}
+
+.sin-trabajo th:nth-child(4),
+.sin-trabajo td:nth-child(4) {
+  display: none;
+}
+
+button[aria-pressed='true'] {
+  color: #ffffff;
+  background: var(--azul);
+  border-color: var(--azul);
+}
+
+button[aria-pressed='true']:hover {
+  color: #ffffff;
+  background: #1f2150;
+}
+
+.acciones-asignacion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: flex-end;
+}
+
+.acciones-asignacion select {
+  min-width: 220px;
+}
+
+#d-motivos {
+  padding-left: 20px;
+  margin: 4px 0 0;
+}
+
 tbody tr:hover {
   background: var(--niebla-verde);
 }
@@ -893,7 +952,9 @@ tbody tr.activa {
 
   /* En el panel, la fecha se oculta en pantallas angostas para que el código se vea completo */
   th:first-child,
-  td:first-child {
+  td:first-child,
+  th:nth-child(4),
+  td:nth-child(4) {
     display: none;
   }
 

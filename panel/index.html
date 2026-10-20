@@ -64,6 +64,14 @@
               <option value="descartado">Descartado</option>
             </select>
           </div>
+          <div id="filtro-responsable">
+            <label for="f-responsable">Responsable</label>
+            <select id="f-responsable">
+              <option value="">Todos</option>
+              <option value="mios">Mis casos</option>
+              <option value="sin">Sin responsable</option>
+            </select>
+          </div>
           <div>
             <label for="f-desde">Desde</label>
             <input id="f-desde" type="date" />
@@ -73,6 +81,7 @@
             <input id="f-hasta" type="date" />
           </div>
           <div class="filtros-acciones">
+            <button type="button" id="btn-atencion" class="secundario" aria-pressed="false">Requieren atención (0)</button>
             <button type="button" id="btn-limpiar" class="secundario">Limpiar</button>
             <button type="button" id="btn-csv" class="secundario">Exportar CSV</button>
           </div>
@@ -87,6 +96,7 @@
                   <th>Fecha</th>
                   <th>Tipo</th>
                   <th>Estado</th>
+                  <th>Responsable</th>
                   <th>Código</th>
                 </tr>
               </thead>
@@ -113,6 +123,29 @@
             <dd id="d-descripcion"></dd>
           </dl>
           <div id="d-foto"></div>
+
+          <div id="d-atencion" class="aviso" hidden>
+            <strong>Este caso necesita atención</strong>
+            <ul id="d-motivos"></ul>
+          </div>
+
+          <div id="bloque-asignacion">
+            <h3>Responsable</h3>
+            <p id="d-responsable"></p>
+            <p id="aviso-asignacion" class="ayuda" hidden></p>
+            <div class="acciones-asignacion">
+              <button type="button" id="btn-tomar" class="secundario">Tomar este caso</button>
+              <button type="button" id="btn-soltar" class="secundario" hidden>Soltar el caso</button>
+            </div>
+            <div class="acciones-asignacion">
+              <div>
+                <label for="r-asignar">Asignar a otra persona</label>
+                <select id="r-asignar"></select>
+              </div>
+              <button type="button" id="btn-asignar" class="secundario">Asignar</button>
+            </div>
+            <p id="error-asignacion" class="error" role="alert" hidden></p>
+          </div>
 
           <h3>Historial</h3>
           <ul id="d-historial" class="historial"></ul>

@@ -11,10 +11,11 @@ alter table report_events add column if not exists public_note text;
 
 -- "estado" = cambio de estado hecho por un funcionario (el de "atendido" es el cierre que el ciudadano valida);
 -- "nota" = el funcionario guardó el mismo estado con una nota (no crea un cierre nuevo);
--- "validacion" = respuesta del ciudadano.
+-- "validacion" = respuesta del ciudadano;
+-- "asignacion" = alguien tomó, soltó o reasignó el caso (interno: el ciudadano nunca lo ve; ver supabase/asignacion.sql).
 alter table report_events add column if not exists kind text not null default 'estado';
 alter table report_events drop constraint if exists report_events_kind_check;
-alter table report_events add constraint report_events_kind_check check (kind in ('estado', 'nota', 'validacion'));
+alter table report_events add constraint report_events_kind_check check (kind in ('estado', 'nota', 'validacion', 'asignacion'));
 
 update report_events set public_note = 'Reporte recibido' where note = 'Reporte recibido' and public_note is null;
 
@@ -188,7 +189,9 @@ begin
       select jsonb_agg(jsonb_build_object('estado', e.status, 'nota', e.public_note, 'fecha', e.created_at, 'clase', e.kind)
                        order by e.created_at, e.id)
       from report_events e
-      where e.report_id = r.id and not (e.kind = 'nota' and e.public_note is null)), '[]'::jsonb),
+      -- Se muestra lo que es del ciudadano (cambios de estado y su propia respuesta) y cualquier nota que tenga
+      -- texto público. Todo lo demás (asignaciones, notas internas) queda fuera.
+      where e.report_id = r.id and (e.kind in ('estado', 'validacion') or e.public_note is not null)), '[]'::jsonb),
     'evidencias', coalesce((
       select jsonb_agg(jsonb_build_object('ruta', v.storage_path, 'descripcion', v.caption, 'fecha', v.created_at)
                        order by v.created_at, v.id)
