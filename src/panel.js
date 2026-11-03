@@ -5,6 +5,7 @@ import { crearMapa, crearCapa, dibujarReportes, enfocar, ajustar } from './mapa.
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
 import { comprimirFoto } from './foto.js';
 import { formatearCodigo } from './ticket.js';
+import { crearPestanas } from './pestanas.js';
 
 montarBannerDemo();
 
@@ -17,6 +18,34 @@ let reportes = [];
 let visibles = [];
 let activoId = null;
 let mapaEncuadrado = false;
+
+// ---------- Secciones ----------
+
+// Reportes (lista) y Mapa comparten el resumen y los filtros. "Detalle" aparece al elegir un reporte y tiene
+// sus propias pestañas: Resumen, Evidencia y Cambiar estado.
+const secciones = crearPestanas($('pestanas'), (id) => {
+  $('bloque-filtros').hidden = id === 't-detalle';
+  if (id === 't-mapa') mostrarMapa();
+});
+const subsecciones = crearPestanas($('subpestanas'));
+secciones.mostrar('t-lista');
+subsecciones.mostrar('st-resumen');
+
+// El mapa se crea la primera vez que se abre la sección: Leaflet necesita medir un contenedor visible.
+function mostrarMapa() {
+  if (!mapa) {
+    mapa = crearMapa('mapa');
+    capa = crearCapa(mapa);
+  }
+  mapa.invalidateSize();
+  marcadores = dibujarReportes(capa, visibles, elegir);
+  if (!mapaEncuadrado && reportes.length > 0) {
+    ajustar(mapa, reportes);
+    mapaEncuadrado = true;
+  }
+}
+
+$('btn-volver').addEventListener('click', () => secciones.mostrar('t-lista', { foco: true }));
 
 // ---------- Tarjetas por estado (también sirven de filtro) ----------
 
@@ -63,6 +92,9 @@ function limpiarPanel() {
   $('resumen').textContent = '';
   mapaEncuadrado = false;
   actualizarTarjetas();
+  secciones.mostrarPestana('t-detalle', false);
+  secciones.mostrar('t-lista');
+  subsecciones.mostrar('st-resumen');
 }
 
 function mostrarLogin(mensaje) {
@@ -124,12 +156,6 @@ async function entrar() {
   $('btn-salir').hidden = false;
   $('usuario').textContent = perfil.full_name;
 
-  // El mapa se crea ya visible, para que Leaflet calcule bien su tamaño.
-  if (!mapa) {
-    mapa = crearMapa('mapa');
-    capa = crearCapa(mapa);
-  }
-  mapa.invalidateSize();
   await cargarReportes();
 }
 
@@ -147,10 +173,6 @@ async function cargarReportes() {
   }
   reportes = data;
   aplicarFiltros();
-  if (!mapaEncuadrado) {
-    ajustar(mapa, reportes);
-    mapaEncuadrado = true;
-  }
 }
 
 function aplicarFiltros() {
@@ -170,7 +192,7 @@ function aplicarFiltros() {
   });
 
   dibujarTabla();
-  marcadores = dibujarReportes(capa, visibles, elegir);
+  if (capa) marcadores = dibujarReportes(capa, visibles, elegir);
   resumir();
 }
 
@@ -222,7 +244,9 @@ $('btn-limpiar').addEventListener('click', () => {
 
 // ---------- Detalle y cambio de estado ----------
 
-async function elegir(id) {
+// Abre el detalle de un reporte. Con { mantener: true } (después de guardar un cambio o una acción) se queda en la
+// misma pestaña del detalle, para que la persona vea el aviso de que se guardó.
+async function elegir(id, { mantener = false } = {}) {
   activoId = id;
   const reporte = reportes.find((r) => r.id === id);
   if (!reporte) return;
@@ -234,9 +258,12 @@ async function elegir(id) {
     else fila.removeAttribute('aria-current');
   });
   restablecerBotones();
-  enfocar(mapa, reporte.lat, reporte.lng);
-  marcadores.get(id)?.openPopup();
+  if (mapa) {
+    enfocar(mapa, reporte.lat, reporte.lng);
+    marcadores.get(id)?.openPopup();
+  }
 
+  $('d-titulo').textContent = `Reporte ${formatearCodigo(reporte.tracking_code)}`;
   $('d-codigo').textContent = formatearCodigo(reporte.tracking_code);
   $('d-tipo').textContent = TIPOS[reporte.type];
   $('d-estado').textContent = ESTADOS[reporte.status];
@@ -252,12 +279,18 @@ async function elegir(id) {
   $('d-historial').replaceChildren();
   $('d-evidencias').replaceChildren();
   $('d-sin-evidencias').hidden = true;
+  $('n-evidencias').textContent = '';
   $('a-descripcion').value = '';
   $('a-foto').value = '';
   mostrarError('error-accion', '');
   $('detalle').hidden = false;
-  const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  $('detalle').scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'nearest' });
+  secciones.mostrarPestana('t-detalle', true);
+  if (!mantener) {
+    subsecciones.mostrar('st-resumen');
+    secciones.mostrar('t-detalle');
+    const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('pestanas').scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'start' });
+  }
 
   const [foto, historial, evidencias] = await Promise.all([
     cargarFoto(reporte),
@@ -271,6 +304,7 @@ async function elegir(id) {
   $('d-historial').replaceChildren(...(historial ?? [itemAviso('No se pudo cargar el historial.')]));
   $('d-evidencias').replaceChildren(...(evidencias ?? [itemAviso('No se pudo cargar la evidencia.')]));
   $('d-sin-evidencias').hidden = evidencias === null || evidencias.length > 0;
+  $('n-evidencias').textContent = evidencias?.length ? ` (${evidencias.length})` : '';
 }
 
 function itemAvisoTexto(texto) {
@@ -373,7 +407,7 @@ $('form-estado').addEventListener('submit', async (evento) => {
 
     await cargarReportes();
     if (activoId === id) {
-      await elegir(id);
+      await elegir(id, { mantener: true });
       $('ok-estado').textContent = 'Cambio guardado. Quien tenga el ticket ya lo ve en su seguimiento.';
       $('ok-estado').hidden = false;
     }
@@ -430,7 +464,7 @@ $('form-accion').addEventListener('submit', async (evento) => {
     }
   }
 
-  if (activoId === id) await elegir(id);
+  if (activoId === id) await elegir(id, { mantener: true });
 });
 
 // ---------- Exportar a CSV ----------
