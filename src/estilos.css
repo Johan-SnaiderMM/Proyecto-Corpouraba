@@ -162,6 +162,21 @@ tr:focus-visible {
   border-bottom-color: var(--verde-claro);
 }
 
+/* Botón del encabezado que lleva al panel de funcionarios: se distingue de los enlaces comunes. */
+.encabezado nav a.acceso-funcionarios {
+  min-height: 44px;
+  padding: 6px 18px;
+  color: var(--azul);
+  border: 2px solid var(--azul);
+  border-radius: 999px;
+}
+
+.encabezado nav a.acceso-funcionarios:hover {
+  color: #ffffff;
+  background: var(--azul);
+  border-color: var(--azul);
+}
+
 #usuario {
   color: var(--texto-suave);
   font-weight: 600;
