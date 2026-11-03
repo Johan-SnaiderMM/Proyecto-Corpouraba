@@ -79,6 +79,15 @@ export function dibujarReportes(capa, reportes, alElegir) {
   return marcadores;
 }
 
+// Encuadra el mapa para que se vean todos los reportes.
+export function ajustar(mapa, reportes) {
+  if (reportes.length === 0) return;
+  mapa.fitBounds(
+    reportes.map((r) => [r.lat, r.lng]),
+    { padding: [30, 30], maxZoom: 13 }
+  );
+}
+
 export function enfocar(mapa, lat, lng) {
   mapa.setView([lat, lng], Math.max(mapa.getZoom(), 14));
 }

@@ -28,6 +28,7 @@ body {
 
 .barra {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -280,6 +281,241 @@ tbody tr.activa {
 .historial {
   margin: 0;
   padding-left: 20px;
+}
+
+/* ---------- Modo demostración y detalles amigables ---------- */
+
+.franja-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: #3d2c00;
+  background: #fde9b0;
+}
+
+.franja-demo button {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: #3d2c00;
+  border-color: #3d2c00;
+}
+
+.franja-demo button:hover {
+  background: #f8d884;
+}
+
+.barra nav a {
+  padding: 4px 2px;
+  white-space: nowrap;
+}
+
+.barra nav a[aria-current='page'] {
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid #f6f4ee;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.acciones button,
+.acciones .boton {
+  margin-top: 16px;
+}
+
+.boton {
+  display: inline-block;
+  padding: 12px 20px;
+  font-weight: 600;
+  color: #f6f4ee;
+  text-decoration: none;
+  background: var(--verde);
+  border-radius: 8px;
+}
+
+.boton:hover {
+  background: var(--verde-oscuro);
+}
+
+.boton.secundario {
+  color: var(--verde-oscuro);
+  background: transparent;
+  border: 2px solid var(--verde);
+}
+
+.boton.secundario:hover {
+  background: #e4efef;
+}
+
+.pista {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #e4efef;
+  border-radius: 8px;
+}
+
+.pista p {
+  margin: 0 0 4px;
+}
+
+.pista .acciones button {
+  margin-top: 4px;
+  padding: 6px 12px;
+  font-size: 0.95rem;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 999px;
+}
+
+.pill[data-estado='recibido'] {
+  color: #8a4205;
+  background: #fde8c4;
+}
+
+.pill[data-estado='en_revision'] {
+  color: #1a3fae;
+  background: #dbe6ff;
+}
+
+.pill[data-estado='atendido'] {
+  color: #116a35;
+  background: #d5f1de;
+}
+
+.pill[data-estado='descartado'] {
+  color: #3f4650;
+  background: #e5e7eb;
+}
+
+.tarjetas-estado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.tarjetas-estado button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--texto);
+  text-align: left;
+  background: var(--tarjeta);
+  border: 2px solid var(--borde);
+  border-left-width: 6px;
+  border-radius: 10px;
+}
+
+.tarjetas-estado button:hover {
+  background: #eef3f2;
+}
+
+.tarjetas-estado button[aria-pressed='true'] {
+  background: #e4efef;
+  border-color: var(--verde);
+}
+
+.tarjetas-estado button[data-estado='recibido'] {
+  border-left-color: #b45309;
+}
+
+.tarjetas-estado button[data-estado='en_revision'] {
+  border-left-color: #1d4ed8;
+}
+
+.tarjetas-estado button[data-estado='atendido'] {
+  border-left-color: #15803d;
+}
+
+.tarjetas-estado button[data-estado='descartado'] {
+  border-left-color: #4b5563;
+}
+
+.tarjetas-estado .cifra {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tarjetas-estado .nombre {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.pasos {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.pasos li {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--texto-suave);
+  background: #ece8da;
+  border-radius: 8px;
+}
+
+.pasos li.hecho {
+  color: #08545b;
+  background: #cfe6e6;
+}
+
+.pasos li.actual {
+  font-weight: 700;
+  color: #f6f4ee;
+  background: var(--verde);
+}
+
+.historial {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.historial li {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.historial .cuando {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.aviso-guardado {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #116a35;
+  background: #d5f1de;
+  border-radius: 8px;
 }
 
 #d-foto img {

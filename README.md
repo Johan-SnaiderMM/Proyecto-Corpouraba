@@ -10,6 +10,10 @@ Páginas:
 | `/seguimiento.html` | `seguimiento.html` | Ciudadano: consultar el estado con su código |
 | `/panel/` | `panel/index.html` | Funcionario: lista, mapa, filtros, cambio de estado, CSV |
 
+## Modo demostración
+
+Si no hay `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, la aplicación arranca sola en modo demostración: 18 reportes de ejemplo guardados en el navegador (localStorage), un botón para entrar como funcionario de prueba y un botón para reiniciar los datos. No necesita Supabase ni cuenta de nada. Con las dos variables definidas, usa Supabase de verdad (ver abajo).
+
 ## Puesta en marcha
 
 Requisitos: Node.js (versión LTS) y una cuenta gratuita en Supabase.

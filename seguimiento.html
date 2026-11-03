@@ -11,13 +11,20 @@
     <header class="barra">
       <strong>Reporte ambiental</strong>
       <nav>
-        <a href="/">Nuevo reporte</a>
+        <a href="/">Reportar</a>
+        <a href="/seguimiento.html" aria-current="page">Consultar</a>
+        <a href="/panel/">Funcionarios</a>
       </nav>
     </header>
 
     <main class="contenedor">
       <h1>Consultar un reporte</h1>
       <p class="ayuda">Escribe el código que recibiste al enviar tu reporte.</p>
+
+      <div id="pista-demo" class="pista" hidden>
+        <p>Para la demostración puedes probar con un código de ejemplo:</p>
+        <div id="codigos-ejemplo" class="acciones"></div>
+      </div>
 
       <form id="formulario" novalidate>
         <label for="codigo">Código de seguimiento</label>
@@ -29,11 +36,12 @@
 
       <section id="estado" class="resultado" hidden aria-live="polite">
         <h2>Estado del reporte</h2>
+        <ol id="e-pasos" class="pasos" aria-label="Avance del reporte"></ol>
         <dl>
           <dt>Tipo</dt>
           <dd id="e-tipo"></dd>
           <dt>Estado</dt>
-          <dd id="e-estado"></dd>
+          <dd><span id="e-estado" class="pill"></span></dd>
           <dt>Recibido</dt>
           <dd id="e-creado"></dd>
           <dt>Última actualización</dt>

@@ -1,9 +1,20 @@
-import { supabase } from './supabase.js';
+import { supabase, MODO_DEMO } from './supabase.js';
+import { montarBannerDemo } from './banner.js';
 import { crearMapa, pedirUbicacion, selectorDePunto } from './mapa.js';
 import { comprimirFoto } from './foto.js';
 import { validarReporte } from './validar.js';
 
 const ESPERA_ENTRE_ENVIOS_MS = 30_000;
+
+// Casos para rellenar el formulario con un clic durante una demostración.
+const EJEMPLOS = [
+  { tipo: 'tala', descripcion: 'Están cortando árboles grandes junto a la quebrada. Llevan dos días y se llevan la madera en un camión.', lat: 7.8795, lng: -76.6342 },
+  { tipo: 'vertimiento', descripcion: 'El caño amaneció con el agua de color gris y mal olor. Hay peces muertos en la orilla.', lat: 7.8661, lng: -76.6129 },
+  { tipo: 'quema', descripcion: 'Queman basura y llantas en un lote al lado del barrio. El humo negro entra a las casas.', lat: 7.8908, lng: -76.6451 },
+  { tipo: 'residuos', descripcion: 'Botaron escombros y bolsas de basura en la vía, ya están tapando parte del desagüe.', lat: 7.8532, lng: -76.6598 },
+];
+
+montarBannerDemo();
 
 // Sube la foto (si hay) y crea el reporte. Devuelve el código de seguimiento.
 async function enviarReporte({ tipo, descripcion, lat, lng, archivoFoto }) {
@@ -41,6 +52,18 @@ const selector = selectorDePunto(mapa, (p) => {
   punto = p;
   $('coordenadas').textContent = `Lugar marcado: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
 });
+
+if (MODO_DEMO) {
+  $('pista-demo').hidden = false;
+  $('btn-ejemplo').addEventListener('click', () => {
+    const ejemplo = EJEMPLOS[Math.floor(Math.random() * EJEMPLOS.length)];
+    $('tipo').value = ejemplo.tipo;
+    $('descripcion').value = ejemplo.descripcion;
+    selector.fijar(ejemplo.lat, ejemplo.lng);
+    mapa.setView([ejemplo.lat, ejemplo.lng], 15);
+    mostrarErrores([]);
+  });
+}
 
 $('btn-ubicacion').addEventListener('click', async () => {
   try {
@@ -84,7 +107,7 @@ formulario.addEventListener('submit', async (evento) => {
 
   // Freno básico contra envíos repetidos desde el mismo dispositivo.
   const ultimoEnvio = Number(localStorage.getItem('ultimoEnvio') ?? 0);
-  if (Date.now() - ultimoEnvio < ESPERA_ENTRE_ENVIOS_MS) {
+  if (!MODO_DEMO && Date.now() - ultimoEnvio < ESPERA_ENTRE_ENVIOS_MS) {
     mostrarErrores(['Espera unos segundos antes de enviar otro reporte.']);
     return;
   }
@@ -112,6 +135,9 @@ formulario.addEventListener('submit', async (evento) => {
 
 function mostrarResultado(codigo) {
   $('codigo').textContent = codigo;
+  $('ver-estado').href = `/seguimiento.html?codigo=${encodeURIComponent(codigo)}`;
+  $('ver-panel').hidden = !MODO_DEMO;
+  $('pista-demo').hidden = true;
   formulario.hidden = true;
   $('resultado').hidden = false;
 }
@@ -121,6 +147,7 @@ $('btn-otro').addEventListener('click', () => {
   punto = null;
   $('coordenadas').textContent = 'Aún no has marcado un lugar.';
   $('resultado').hidden = true;
+  $('pista-demo').hidden = !MODO_DEMO;
   formulario.hidden = false;
   mapa.invalidateSize();
 });

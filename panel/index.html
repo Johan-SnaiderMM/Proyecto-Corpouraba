@@ -11,6 +11,8 @@
     <header class="barra">
       <strong>Reporte ambiental · Panel</strong>
       <nav>
+        <a href="/">Reportar</a>
+        <a href="/seguimiento.html">Consultar</a>
         <span id="usuario"></span>
         <button type="button" id="btn-salir" class="secundario" hidden>Cerrar sesión</button>
       </nav>
@@ -20,6 +22,12 @@
       <!-- Vista de inicio de sesión -->
       <section id="vista-login" class="tarjeta">
         <h1>Panel del funcionario</h1>
+        <div id="pista-demo" class="pista" hidden>
+          <p>Es una demostración: no necesitas escribir nada.</p>
+          <div class="acciones">
+            <button type="button" id="btn-demo">Entrar como funcionario de prueba</button>
+          </div>
+        </div>
         <form id="form-login" novalidate>
           <label for="correo">Correo</label>
           <input id="correo" type="email" autocomplete="username" required />
@@ -33,6 +41,7 @@
       <!-- Vista del panel -->
       <section id="vista-panel" hidden>
         <h1>Reportes</h1>
+        <div id="tarjetas-estado" class="tarjetas-estado" role="group" aria-label="Reportes por estado"></div>
         <p id="resumen" class="ayuda" aria-live="polite"></p>
 
         <div class="filtros">
@@ -98,34 +107,37 @@
             <dt>Tipo</dt>
             <dd id="d-tipo"></dd>
             <dt>Estado</dt>
-            <dd id="d-estado"></dd>
+            <dd><span id="d-estado" class="pill"></span></dd>
             <dt>Recibido</dt>
             <dd id="d-creado"></dd>
             <dt>Ubicación</dt>
             <dd id="d-ubicacion"></dd>
             <dt>Descripción</dt>
             <dd id="d-descripcion"></dd>
+            <dt>Mensaje al ciudadano</dt>
+            <dd id="d-publica"></dd>
           </dl>
           <div id="d-foto"></div>
 
-          <h3>Historial</h3>
+          <h3>Historial de avances</h3>
           <ul id="d-historial" class="historial"></ul>
 
-          <h3>Cambiar estado</h3>
+          <h3>Agregar un avance</h3>
           <form id="form-estado" novalidate>
-            <label for="n-estado">Nuevo estado</label>
+            <label for="n-estado">Estado del reporte</label>
             <select id="n-estado">
               <option value="recibido">Recibido</option>
               <option value="en_revision">En revisión</option>
               <option value="atendido">Atendido</option>
               <option value="descartado">Descartado</option>
             </select>
-            <label for="n-nota">Nota interna</label>
-            <textarea id="n-nota" rows="2" maxlength="500"></textarea>
-            <label for="n-publica">Nota para el ciudadano (opcional)</label>
-            <input id="n-publica" type="text" maxlength="300" />
+            <label for="n-nota">Nota interna (solo la ve el equipo)</label>
+            <textarea id="n-nota" rows="2" maxlength="500" placeholder="Qué se hizo o se encontró"></textarea>
+            <label for="n-publica">Mensaje para el ciudadano (opcional)</label>
+            <input id="n-publica" type="text" maxlength="300" placeholder="Lo verá al consultar su código" />
             <p id="error-estado" class="error" role="alert" hidden></p>
-            <button type="submit">Guardar cambio</button>
+            <p id="ok-estado" class="aviso-guardado" role="status" hidden></p>
+            <button type="submit">Guardar avance</button>
           </form>
         </section>
       </section>

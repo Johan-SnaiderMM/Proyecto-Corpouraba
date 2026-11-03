@@ -1,6 +1,10 @@
-import { supabase } from './supabase.js';
-import { crearMapa, crearCapa, dibujarReportes, enfocar } from './mapa.js';
+import { supabase, MODO_DEMO } from './supabase.js';
+import { montarBannerDemo } from './banner.js';
+import { CORREO_DEMO, CLAVE_DEMO } from './demo.js';
+import { crearMapa, crearCapa, dibujarReportes, enfocar, ajustar } from './mapa.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
+
+montarBannerDemo();
 
 const $ = (id) => document.getElementById(id);
 
@@ -10,6 +14,46 @@ let marcadores = new Map();
 let reportes = [];
 let visibles = [];
 let activoId = null;
+let mapaEncuadrado = false;
+
+function crearPill(estado) {
+  const pill = document.createElement('span');
+  pill.className = 'pill';
+  pill.dataset.estado = estado;
+  pill.textContent = ESTADOS[estado];
+  return pill;
+}
+
+// ---------- Tarjetas por estado (también sirven de filtro) ----------
+
+for (const [clave, nombre] of Object.entries(ESTADOS)) {
+  const tarjeta = document.createElement('button');
+  tarjeta.type = 'button';
+  tarjeta.dataset.estado = clave;
+  tarjeta.setAttribute('aria-pressed', 'false');
+
+  const cifra = document.createElement('span');
+  cifra.className = 'cifra';
+  cifra.textContent = '0';
+  const etiqueta = document.createElement('span');
+  etiqueta.className = 'nombre';
+  etiqueta.textContent = nombre;
+  tarjeta.append(cifra, etiqueta);
+
+  tarjeta.addEventListener('click', () => {
+    $('f-estado').value = $('f-estado').value === clave ? '' : clave;
+    aplicarFiltros();
+  });
+  $('tarjetas-estado').append(tarjeta);
+}
+
+function actualizarTarjetas() {
+  for (const tarjeta of $('tarjetas-estado').children) {
+    const clave = tarjeta.dataset.estado;
+    tarjeta.querySelector('.cifra').textContent = String(reportes.filter((r) => r.status === clave).length);
+    tarjeta.setAttribute('aria-pressed', String($('f-estado').value === clave));
+  }
+}
 
 // ---------- Sesión ----------
 
@@ -43,6 +87,19 @@ $('form-login').addEventListener('submit', async (evento) => {
 });
 
 $('btn-salir').addEventListener('click', () => supabase.auth.signOut());
+
+// En la demostración el formulario ya viene lleno y hay un botón para entrar sin escribir nada.
+if (MODO_DEMO) {
+  $('correo').value = CORREO_DEMO;
+  $('clave').value = CLAVE_DEMO;
+  $('pista-demo').hidden = false;
+  $('btn-demo').addEventListener('click', () => $('form-login').requestSubmit());
+
+  // Si se envía un reporte desde otra pestaña, la lista se actualiza sola.
+  window.addEventListener('storage', () => {
+    if (!$('vista-panel').hidden) cargarReportes();
+  });
+}
 
 async function entrar() {
   // Cada funcionario puede leer su propia fila de "staff"; si no existe, no tiene permiso.
@@ -81,6 +138,10 @@ async function cargarReportes() {
   }
   reportes = data;
   aplicarFiltros();
+  if (!mapaEncuadrado) {
+    ajustar(mapa, reportes);
+    mapaEncuadrado = true;
+  }
 }
 
 function aplicarFiltros() {
@@ -105,11 +166,11 @@ function aplicarFiltros() {
 }
 
 function resumir() {
-  const partes = Object.entries(ESTADOS).map(([clave, nombre]) => {
-    const cantidad = visibles.filter((r) => r.status === clave).length;
-    return `${nombre}: ${cantidad}`;
-  });
-  $('resumen').textContent = `${visibles.length} de ${reportes.length} reportes · ${partes.join(' · ')}`;
+  actualizarTarjetas();
+  $('resumen').textContent =
+    visibles.length === reportes.length
+      ? `${reportes.length} reportes. Toca uno en la lista o en el mapa para ver su detalle.`
+      : `Mostrando ${visibles.length} de ${reportes.length} reportes.`;
 }
 
 function dibujarTabla() {
@@ -123,9 +184,15 @@ function dibujarTabla() {
     fila.tabIndex = 0;
     if (r.id === activoId) fila.classList.add('activa');
 
-    for (const texto of [fecha(r.created_at), TIPOS[r.type], ESTADOS[r.status], r.tracking_code]) {
+    const celdaEstado = document.createElement('td');
+    celdaEstado.append(crearPill(r.status));
+    for (const contenido of [fecha(r.created_at), TIPOS[r.type], celdaEstado, r.tracking_code]) {
+      if (contenido instanceof HTMLElement) {
+        fila.append(contenido);
+        continue;
+      }
       const celda = document.createElement('td');
-      celda.textContent = texto;
+      celda.textContent = contenido;
       fila.append(celda);
     }
 
@@ -160,13 +227,16 @@ async function elegir(id) {
   $('d-codigo').textContent = reporte.tracking_code;
   $('d-tipo').textContent = TIPOS[reporte.type];
   $('d-estado').textContent = ESTADOS[reporte.status];
+  $('d-estado').dataset.estado = reporte.status;
   $('d-creado').textContent = fecha(reporte.created_at);
   $('d-ubicacion').textContent = `${reporte.lat.toFixed(5)}, ${reporte.lng.toFixed(5)}`;
   $('d-descripcion').textContent = reporte.description;
+  $('d-publica').textContent = reporte.public_note || 'Todavía no hay mensaje.';
   $('n-estado').value = reporte.status;
   $('n-nota').value = '';
   $('n-publica').value = '';
   mostrarError('error-estado', '');
+  $('ok-estado').hidden = true;
   $('d-foto').replaceChildren();
   $('d-historial').replaceChildren();
   $('detalle').hidden = false;
@@ -202,7 +272,11 @@ async function cargarHistorial(reporte) {
   if (error) return [];
   return data.map((evento) => {
     const item = document.createElement('li');
-    item.textContent = `${fecha(evento.created_at)} · ${ESTADOS[evento.status]}${evento.note ? ` — ${evento.note}` : ''}`;
+    const cuando = document.createElement('span');
+    cuando.className = 'cuando';
+    cuando.textContent = fecha(evento.created_at);
+    item.append(cuando, crearPill(evento.status));
+    if (evento.note) item.append(` ${evento.note}`);
     return item;
   });
 }
@@ -220,13 +294,15 @@ $('form-estado').addEventListener('submit', async (evento) => {
   });
   if (error) {
     console.error(error);
-    mostrarError('error-estado', 'No se pudo guardar el cambio.');
+    mostrarError('error-estado', 'No se pudo guardar el avance.');
     return;
   }
 
   const id = activoId;
   await cargarReportes();
   await elegir(id);
+  $('ok-estado').textContent = 'Avance guardado. El ciudadano ya lo ve al consultar su código.';
+  $('ok-estado').hidden = false;
 });
 
 // ---------- Exportar a CSV ----------
