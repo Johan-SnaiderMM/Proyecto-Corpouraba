@@ -44,51 +44,61 @@
         </form>
       </section>
 
-      <!-- Vista del panel -->
+      <!-- Vista del panel: tres secciones (Reportes, Mapa y, con un reporte elegido, Detalle) -->
       <section id="vista-panel" hidden>
         <h1>Reportes</h1>
-        <div id="tarjetas-estado" class="tarjetas-estado" role="group" aria-label="Reportes por estado (toque uno para filtrar)"></div>
-        <p id="resumen" class="ayuda" aria-live="polite"></p>
 
-        <div class="filtros">
-          <div>
-            <label for="f-tipo">Tipo</label>
-            <select id="f-tipo">
-              <option value="">Todos</option>
-              <option value="tala">Tala de árboles</option>
-              <option value="quema">Quema</option>
-              <option value="vertimiento">Vertimiento o contaminación del agua</option>
-              <option value="fauna">Fauna (caza o tráfico)</option>
-              <option value="residuos">Residuos</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-          <div>
-            <label for="f-estado">Estado</label>
-            <select id="f-estado">
-              <option value="">Todos</option>
-              <option value="recibido">Recibido</option>
-              <option value="en_revision">En revisión</option>
-              <option value="atendido">Atendido</option>
-              <option value="descartado">Descartado</option>
-            </select>
-          </div>
-          <div>
-            <label for="f-desde">Desde</label>
-            <input id="f-desde" type="date" />
-          </div>
-          <div>
-            <label for="f-hasta">Hasta</label>
-            <input id="f-hasta" type="date" />
-          </div>
-          <div class="filtros-acciones">
-            <button type="button" id="btn-limpiar" class="secundario">Limpiar</button>
-            <button type="button" id="btn-csv" class="secundario">Exportar CSV</button>
+        <div id="pestanas" class="pestanas" role="tablist" aria-label="Secciones del panel">
+          <button type="button" role="tab" id="t-lista" aria-controls="p-lista">Reportes</button>
+          <button type="button" role="tab" id="t-mapa" aria-controls="p-mapa">Mapa</button>
+          <button type="button" role="tab" id="t-detalle" aria-controls="p-detalle" hidden>Detalle del reporte</button>
+        </div>
+
+        <!-- Resumen y filtros: valen para la lista y para el mapa -->
+        <div id="bloque-filtros">
+          <div id="tarjetas-estado" class="tarjetas-estado" role="group" aria-label="Reportes por estado (toque uno para filtrar)"></div>
+          <p id="resumen" class="ayuda" aria-live="polite"></p>
+
+          <div class="filtros">
+            <div>
+              <label for="f-tipo">Tipo</label>
+              <select id="f-tipo">
+                <option value="">Todos</option>
+                <option value="tala">Tala de árboles</option>
+                <option value="quema">Quema</option>
+                <option value="vertimiento">Vertimiento o contaminación del agua</option>
+                <option value="fauna">Fauna (caza o tráfico)</option>
+                <option value="residuos">Residuos</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-estado">Estado</label>
+              <select id="f-estado">
+                <option value="">Todos</option>
+                <option value="recibido">Recibido</option>
+                <option value="en_revision">En revisión</option>
+                <option value="atendido">Atendido</option>
+                <option value="descartado">Descartado</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-desde">Desde</label>
+              <input id="f-desde" type="date" />
+            </div>
+            <div>
+              <label for="f-hasta">Hasta</label>
+              <input id="f-hasta" type="date" />
+            </div>
+            <div class="filtros-acciones">
+              <button type="button" id="btn-limpiar" class="secundario">Limpiar</button>
+              <button type="button" id="btn-csv" class="secundario">Exportar CSV</button>
+            </div>
           </div>
         </div>
 
-        <div class="rejilla-panel">
-          <div id="mapa" role="application" aria-label="Mapa de reportes"></div>
+        <!-- Sección: lista de reportes -->
+        <div id="p-lista" role="tabpanel" aria-labelledby="t-lista" tabindex="0">
           <div class="tabla-contenedor">
             <table>
               <thead>
@@ -105,64 +115,91 @@
           </div>
         </div>
 
-        <section id="detalle" class="tarjeta" hidden>
-          <h2>Detalle del reporte</h2>
-          <dl>
-            <dt>Código</dt>
-            <dd id="d-codigo"></dd>
-            <dt>Tipo</dt>
-            <dd id="d-tipo"></dd>
-            <dt>Estado</dt>
-            <dd id="d-estado"></dd>
-            <dt>Recibido</dt>
-            <dd id="d-creado"></dd>
-            <dt>Ubicación</dt>
-            <dd id="d-ubicacion"></dd>
-            <dt>Descripción</dt>
-            <dd id="d-descripcion"></dd>
-          </dl>
-          <div id="d-foto"></div>
+        <!-- Sección: mapa -->
+        <div id="p-mapa" role="tabpanel" aria-labelledby="t-mapa" tabindex="0" hidden>
+          <p class="ayuda">Toque un punto para abrir su reporte.</p>
+          <div id="mapa" role="application" aria-label="Mapa de reportes"></div>
+        </div>
 
-          <h3>Historial</h3>
-          <ul id="d-historial" class="historial"></ul>
+        <!-- Sección: detalle del reporte elegido, con sus propias pestañas -->
+        <div id="p-detalle" role="tabpanel" aria-labelledby="t-detalle" hidden>
+          <section id="detalle" class="tarjeta" hidden>
+            <div class="detalle-cabecera">
+              <h2 id="d-titulo" tabindex="-1">Detalle del reporte</h2>
+              <button type="button" id="btn-volver" class="secundario">← Volver a la lista</button>
+            </div>
 
-          <h3>Evidencia registrada</h3>
-          <ul id="d-evidencias" class="evidencias"></ul>
-          <p id="d-sin-evidencias" class="ayuda" hidden>Aún no se ha registrado evidencia.</p>
+            <div id="subpestanas" class="pestanas subpestanas" role="tablist" aria-label="Secciones del reporte">
+              <button type="button" role="tab" id="st-resumen" aria-controls="sp-resumen">Resumen</button>
+              <button type="button" role="tab" id="st-evidencia" aria-controls="sp-evidencia">
+                Evidencia<span id="n-evidencias" class="contador"></span>
+              </button>
+              <button type="button" role="tab" id="st-estado" aria-controls="sp-estado">Cambiar estado</button>
+            </div>
 
-          <h3>Cambiar estado</h3>
-          <form id="form-estado" novalidate>
-            <label for="n-estado">Nuevo estado</label>
-            <select id="n-estado">
-              <option value="recibido">Recibido</option>
-              <option value="en_revision">En revisión</option>
-              <option value="atendido">Atendido</option>
-              <option value="descartado">Descartado</option>
-            </select>
-            <label for="n-nota">Nota interna (no la ve el ciudadano)</label>
-            <textarea id="n-nota" rows="2" maxlength="500"></textarea>
-            <label for="n-publica">Nota para el ciudadano (opcional)</label>
-            <p class="ayuda">Aparece en la línea de tiempo del ticket.</p>
-            <input id="n-publica" type="text" maxlength="300" />
-            <p id="error-estado" class="error" role="alert" hidden></p>
-            <p id="ok-estado" class="aviso aviso-ok" role="status" hidden></p>
-            <button type="submit">Guardar cambio</button>
-          </form>
+            <div id="sp-resumen" role="tabpanel" aria-labelledby="st-resumen" tabindex="0">
+              <dl>
+                <dt>Código</dt>
+                <dd id="d-codigo"></dd>
+                <dt>Tipo</dt>
+                <dd id="d-tipo"></dd>
+                <dt>Estado</dt>
+                <dd id="d-estado"></dd>
+                <dt>Recibido</dt>
+                <dd id="d-creado"></dd>
+                <dt>Ubicación</dt>
+                <dd id="d-ubicacion"></dd>
+                <dt>Descripción</dt>
+                <dd id="d-descripcion"></dd>
+              </dl>
+              <div id="d-foto"></div>
 
-          <h3>Registrar una acción con evidencia</h3>
-          <p class="ayuda">
-            La descripción y la foto las verá quien reportó, con su ticket. No suba fotos con rostros ni datos personales.
-          </p>
-          <form id="form-accion" novalidate>
-            <label for="a-descripcion">Qué se hizo</label>
-            <textarea id="a-descripcion" rows="2" maxlength="300" required
-              placeholder="Por ejemplo: visita técnica al sitio y apertura del proceso sancionatorio"></textarea>
-            <label for="a-foto">Foto de evidencia</label>
-            <input id="a-foto" type="file" accept="image/*" required />
-            <p id="error-accion" class="error" role="alert" hidden></p>
-            <button type="submit" id="btn-accion">Registrar acción</button>
-          </form>
-        </section>
+              <h3>Historial</h3>
+              <ul id="d-historial" class="historial"></ul>
+            </div>
+
+            <div id="sp-evidencia" role="tabpanel" aria-labelledby="st-evidencia" tabindex="0" hidden>
+              <h3>Evidencia registrada</h3>
+              <ul id="d-evidencias" class="evidencias"></ul>
+              <p id="d-sin-evidencias" class="ayuda" hidden>Aún no se ha registrado evidencia.</p>
+
+              <h3>Registrar una acción con evidencia</h3>
+              <p class="ayuda">
+                La descripción y la foto las verá quien reportó, con su ticket. No suba fotos con rostros ni datos personales.
+              </p>
+              <form id="form-accion" novalidate>
+                <label for="a-descripcion">Qué se hizo</label>
+                <textarea id="a-descripcion" rows="2" maxlength="300" required
+                  placeholder="Por ejemplo: visita técnica al sitio y apertura del proceso sancionatorio"></textarea>
+                <label for="a-foto">Foto de evidencia</label>
+                <input id="a-foto" type="file" accept="image/*" required />
+                <p id="error-accion" class="error" role="alert" hidden></p>
+                <button type="submit" id="btn-accion">Registrar acción</button>
+              </form>
+            </div>
+
+            <div id="sp-estado" role="tabpanel" aria-labelledby="st-estado" tabindex="0" hidden>
+              <h3>Cambiar estado</h3>
+              <form id="form-estado" novalidate>
+                <label for="n-estado">Nuevo estado</label>
+                <select id="n-estado">
+                  <option value="recibido">Recibido</option>
+                  <option value="en_revision">En revisión</option>
+                  <option value="atendido">Atendido</option>
+                  <option value="descartado">Descartado</option>
+                </select>
+                <label for="n-nota">Nota interna (no la ve el ciudadano)</label>
+                <textarea id="n-nota" rows="2" maxlength="500"></textarea>
+                <label for="n-publica">Nota para el ciudadano (opcional)</label>
+                <p class="ayuda">Aparece en la línea de tiempo del ticket.</p>
+                <input id="n-publica" type="text" maxlength="300" />
+                <p id="error-estado" class="error" role="alert" hidden></p>
+                <p id="ok-estado" class="aviso aviso-ok" role="status" hidden></p>
+                <button type="submit">Guardar cambio</button>
+              </form>
+            </div>
+          </section>
+        </div>
       </section>
     </main>
 
