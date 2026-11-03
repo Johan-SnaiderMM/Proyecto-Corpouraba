@@ -1,8 +1,12 @@
-import { supabase } from './supabase.js';
-import { crearMapa, crearCapa, dibujarReportes, enfocar } from './mapa.js';
+import { supabase, MODO_DEMO } from './supabase.js';
+import { montarBannerDemo } from './banner.js';
+import { CORREO_DEMO, CLAVE_DEMO } from './demo.js';
+import { crearMapa, crearCapa, dibujarReportes, enfocar, ajustar } from './mapa.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
 import { comprimirFoto } from './foto.js';
 import { formatearCodigo } from './ticket.js';
+
+montarBannerDemo();
 
 const $ = (id) => document.getElementById(id);
 
@@ -12,6 +16,38 @@ let marcadores = new Map();
 let reportes = [];
 let visibles = [];
 let activoId = null;
+let mapaEncuadrado = false;
+
+// ---------- Tarjetas por estado (también sirven de filtro) ----------
+
+for (const [clave, nombre] of Object.entries(ESTADOS)) {
+  const tarjeta = document.createElement('button');
+  tarjeta.type = 'button';
+  tarjeta.dataset.estado = clave;
+  tarjeta.setAttribute('aria-pressed', 'false');
+
+  const cifra = document.createElement('span');
+  cifra.className = 'cifra';
+  cifra.textContent = '0';
+  const etiqueta = document.createElement('span');
+  etiqueta.className = 'nombre';
+  etiqueta.textContent = nombre;
+  tarjeta.append(cifra, etiqueta);
+
+  tarjeta.addEventListener('click', () => {
+    $('f-estado').value = $('f-estado').value === clave ? '' : clave;
+    aplicarFiltros();
+  });
+  $('tarjetas-estado').append(tarjeta);
+}
+
+function actualizarTarjetas() {
+  for (const tarjeta of $('tarjetas-estado').children) {
+    const clave = tarjeta.dataset.estado;
+    tarjeta.querySelector('.cifra').textContent = String(reportes.filter((r) => r.status === clave).length);
+    tarjeta.setAttribute('aria-pressed', String($('f-estado').value === clave));
+  }
+}
 
 // ---------- Sesión ----------
 
@@ -25,6 +61,8 @@ function limpiarPanel() {
   $('detalle').hidden = true;
   for (const id of ['filas', 'd-foto', 'd-historial', 'd-evidencias']) $(id).replaceChildren();
   $('resumen').textContent = '';
+  mapaEncuadrado = false;
+  actualizarTarjetas();
 }
 
 function mostrarLogin(mensaje) {
@@ -58,6 +96,19 @@ $('form-login').addEventListener('submit', async (evento) => {
 });
 
 $('btn-salir').addEventListener('click', () => supabase.auth.signOut());
+
+// En la demostración el formulario ya viene lleno y hay un botón para entrar sin escribir nada.
+if (MODO_DEMO) {
+  $('correo').value = CORREO_DEMO;
+  $('clave').value = CLAVE_DEMO;
+  $('pista-demo').hidden = false;
+  $('btn-demo').addEventListener('click', () => $('form-login').requestSubmit());
+
+  // Si se envía un reporte o una validación desde otra pestaña, la lista se actualiza sola.
+  window.addEventListener('storage', () => {
+    if (!$('vista-panel').hidden) cargarReportes();
+  });
+}
 
 async function entrar() {
   // Cada funcionario puede leer su propia fila de "staff"; si no existe, no tiene permiso.
@@ -96,6 +147,10 @@ async function cargarReportes() {
   }
   reportes = data;
   aplicarFiltros();
+  if (!mapaEncuadrado) {
+    ajustar(mapa, reportes);
+    mapaEncuadrado = true;
+  }
 }
 
 function aplicarFiltros() {
@@ -120,11 +175,11 @@ function aplicarFiltros() {
 }
 
 function resumir() {
-  const partes = Object.entries(ESTADOS).map(([clave, nombre]) => {
-    const cantidad = visibles.filter((r) => r.status === clave).length;
-    return `${nombre}: ${cantidad}`;
-  });
-  $('resumen').textContent = `${visibles.length} de ${reportes.length} reportes · ${partes.join(' · ')}`;
+  actualizarTarjetas();
+  $('resumen').textContent =
+    visibles.length === reportes.length
+      ? `${reportes.length} reportes. Toque uno en la lista o en el mapa para ver su detalle.`
+      : `Mostrando ${visibles.length} de ${reportes.length} reportes.`;
 }
 
 function dibujarTabla() {
@@ -192,6 +247,7 @@ async function elegir(id) {
   $('n-nota').value = '';
   $('n-publica').value = '';
   mostrarError('error-estado', '');
+  $('ok-estado').hidden = true;
   $('d-foto').replaceChildren();
   $('d-historial').replaceChildren();
   $('d-evidencias').replaceChildren();
@@ -316,7 +372,11 @@ $('form-estado').addEventListener('submit', async (evento) => {
     }
 
     await cargarReportes();
-    if (activoId === id) await elegir(id);
+    if (activoId === id) {
+      await elegir(id);
+      $('ok-estado').textContent = 'Cambio guardado. Quien tenga el ticket ya lo ve en su seguimiento.';
+      $('ok-estado').hidden = false;
+    }
   } finally {
     if (activoId === id) boton.disabled = false;
   }

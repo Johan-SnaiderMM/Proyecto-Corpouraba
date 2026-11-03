@@ -70,6 +70,17 @@ El diseño sigue el **Manual de Identidad Corporativa de CORPOURABA**:
 - **Logo** (`public/img/`): se tomó del manual, sin deformarlo ni recolorearlo. Va sobre fondo blanco en el encabezado, en su versión blanca sobre el verde del pie (abajo a la derecha, como indica el manual) y con 50 px de alto como mínimo en pantalla. `curvas.svg` es un dibujo propio que imita las "curvas en degradé azul y verde" del manual.
 - **Pendiente de confirmar con CORPOURABA:** que se pueda usar su nombre y su logo en este prototipo. Mientras tanto, todas las páginas dicen que es un prototipo de práctica y no un canal oficial, y el pie remite a los canales reales (PBX, correo y sitio web del manual).
 
+## Modo demostración (sin Supabase)
+
+Si no existen `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, la aplicación arranca sola en **modo demostración**: no necesita Supabase ni ninguna cuenta. Imita la base de datos en el navegador (`src/demo.js`, en `localStorage`) con los mismos 6 casos de `supabase/demo.sql` y sus fotos (`public/demo-fotos/`), y agrega ayudas para mostrarla:
+
+- una franja arriba de cada página con el botón **Reiniciar datos de ejemplo**;
+- en el formulario, **Rellenar con un ejemplo** (y sin la espera de 30 segundos entre envíos);
+- en el panel, **Entrar como funcionaria de prueba** (correo `funcionario@demo.co`, contraseña `demo1234`) y tarjetas por estado que también filtran;
+- en la consulta, botones con los tickets de ejemplo.
+
+Los datos viven solo en el navegador de quien la abre: un reporte enviado desde el celular no aparece en el panel del computador. Para mostrarlo todo, use un solo navegador con dos pestañas (el panel se actualiza solo). Con las dos variables definidas se usa Supabase de verdad y nada de esto se carga. Si cambia el SQL de la base, hay que reflejarlo en `src/demo.js`; `src/demo-cliente.test.js` comprueba que el modo demostración se porta como las funciones de `supabase/seguimiento.sql`.
+
 ## Datos de demostración
 
 Para ensayar la presentación hay 6 reportes inventados en municipios del Urabá, en distintos momentos del proceso (con evidencia, validaciones y un caso reabierto). Se cargan en dos pasos, **después de haber registrado a una funcionaria en `staff`** (paso 4 de "Puesta en marcha"):
