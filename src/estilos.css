@@ -958,6 +958,115 @@ tbody tr.activa {
   }
 }
 
+/* ---------- Modo demostración ---------- */
+
+.franja-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: #3d2c00;
+  background: #fde9b0;
+}
+
+.franja-demo button {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: #3d2c00;
+  border-color: #3d2c00;
+}
+
+.franja-demo button:hover {
+  background: #f8d884;
+}
+
+.pista {
+  margin: 0 0 8px;
+  padding: 12px 16px;
+  background: var(--niebla-azul);
+  border-radius: 10px;
+}
+
+.pista p {
+  margin: 0 0 4px;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.pista button {
+  margin-top: 4px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+}
+
+/* ---------- Panel: tarjetas por estado (también filtran) ---------- */
+
+.tarjetas-estado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.tarjetas-estado button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--texto);
+  text-align: left;
+  background: var(--tarjeta);
+  border: 2px solid var(--borde);
+  border-left-width: 6px;
+  border-radius: 10px;
+}
+
+.tarjetas-estado button:hover {
+  background: var(--niebla-azul);
+}
+
+.tarjetas-estado button[aria-pressed='true'] {
+  background: var(--niebla-azul);
+  border-color: var(--azul);
+}
+
+.tarjetas-estado button[data-estado='recibido'] {
+  border-left-color: #b45309;
+}
+
+.tarjetas-estado button[data-estado='en_revision'] {
+  border-left-color: #4078b0;
+}
+
+.tarjetas-estado button[data-estado='atendido'] {
+  border-left-color: #2d522d;
+}
+
+.tarjetas-estado button[data-estado='descartado'] {
+  border-left-color: #6b7280;
+}
+
+.tarjetas-estado .cifra {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tarjetas-estado .nombre {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

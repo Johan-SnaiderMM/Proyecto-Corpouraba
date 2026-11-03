@@ -16,6 +16,8 @@
           <img src="/img/logo-corpouraba.png" width="129" height="56" alt="CORPOURABA" />
         </a>
         <nav aria-label="Sesión">
+          <a href="/">Reportar</a>
+          <a href="/seguimiento.html">Consultar</a>
           <span id="usuario"></span>
           <button type="button" id="btn-salir" class="secundario" hidden>Cerrar sesión</button>
         </nav>
@@ -26,6 +28,12 @@
       <!-- Vista de inicio de sesión -->
       <section id="vista-login" class="tarjeta login">
         <h1>Panel del funcionario</h1>
+        <div id="pista-demo" class="pista" hidden>
+          <p>Es una demostración: no necesita escribir nada.</p>
+          <div class="acciones">
+            <button type="button" id="btn-demo">Entrar como funcionaria de prueba</button>
+          </div>
+        </div>
         <form id="form-login" novalidate>
           <label for="correo">Correo</label>
           <input id="correo" type="email" autocomplete="username" required />
@@ -39,6 +47,7 @@
       <!-- Vista del panel -->
       <section id="vista-panel" hidden>
         <h1>Reportes</h1>
+        <div id="tarjetas-estado" class="tarjetas-estado" role="group" aria-label="Reportes por estado (toque uno para filtrar)"></div>
         <p id="resumen" class="ayuda" aria-live="polite"></p>
 
         <div class="filtros">
@@ -136,6 +145,7 @@
             <p class="ayuda">Aparece en la línea de tiempo del ticket.</p>
             <input id="n-publica" type="text" maxlength="300" />
             <p id="error-estado" class="error" role="alert" hidden></p>
+            <p id="ok-estado" class="aviso aviso-ok" role="status" hidden></p>
             <button type="submit">Guardar cambio</button>
           </form>
 

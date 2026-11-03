@@ -1,4 +1,5 @@
-import { supabase } from './supabase.js';
+import { supabase, MODO_DEMO } from './supabase.js';
+import { montarBannerDemo } from './banner.js';
 import { crearMapa, pedirUbicacion, selectorDePunto } from './mapa.js';
 import { comprimirFoto } from './foto.js';
 import { validarReporte } from './validar.js';
@@ -6,6 +7,16 @@ import { copiar, enlaceDeSeguimiento, formatearCodigo } from './ticket.js';
 import { captchaActivo, montarCaptcha } from './captcha.js';
 
 const ESPERA_ENTRE_ENVIOS_MS = 30_000;
+
+// Casos para rellenar el formulario con un clic durante una demostración.
+const EJEMPLOS = [
+  { tipo: 'tala', descripcion: 'Están cortando árboles grandes junto a la quebrada. Llevan dos días y se llevan la madera en un camión.', lat: 7.8795, lng: -76.6342 },
+  { tipo: 'vertimiento', descripcion: 'El caño amaneció con el agua de color gris y mal olor. Hay peces muertos en la orilla.', lat: 7.8661, lng: -76.6129 },
+  { tipo: 'quema', descripcion: 'Queman basura y llantas en un lote al lado del barrio. El humo negro entra a las casas.', lat: 7.8908, lng: -76.6451 },
+  { tipo: 'residuos', descripcion: 'Botaron escombros y bolsas de basura en la vía, ya están tapando parte del desagüe.', lat: 7.8532, lng: -76.6598 },
+];
+
+montarBannerDemo();
 
 // Con captcha: el servidor verifica el token, crea el reporte y entrega un permiso para subir la foto.
 // Devuelve el código y si la foto pudo subirse (el reporte ya existe aunque la foto falle).
@@ -115,6 +126,18 @@ const selector = selectorDePunto(mapa, (p) => {
   $('coordenadas').textContent = `Lugar marcado: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
 });
 
+if (MODO_DEMO) {
+  $('pista-demo').hidden = false;
+  $('btn-ejemplo').addEventListener('click', () => {
+    const ejemplo = EJEMPLOS[Math.floor(Math.random() * EJEMPLOS.length)];
+    $('tipo').value = ejemplo.tipo;
+    $('descripcion').value = ejemplo.descripcion;
+    selector.fijar(ejemplo.lat, ejemplo.lng);
+    mapa.setView([ejemplo.lat, ejemplo.lng], 15);
+    mostrarErrores([]);
+  });
+}
+
 $('btn-ubicacion').addEventListener('click', async () => {
   try {
     const p = await pedirUbicacion();
@@ -159,7 +182,7 @@ formulario.addEventListener('submit', async (evento) => {
 
   // Freno básico contra envíos repetidos desde el mismo dispositivo.
   const ultimoEnvio = Number(localStorage.getItem('ultimoEnvio') ?? 0);
-  if (Date.now() - ultimoEnvio < ESPERA_ENTRE_ENVIOS_MS) {
+  if (!MODO_DEMO && Date.now() - ultimoEnvio < ESPERA_ENTRE_ENVIOS_MS) {
     mostrarErrores(['Espere unos segundos antes de enviar otro reporte.']);
     return;
   }

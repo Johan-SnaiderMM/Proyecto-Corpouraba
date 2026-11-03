@@ -39,6 +39,11 @@
 
       <div class="contenedor sobre-portada">
         <form id="formulario" class="tarjeta" novalidate>
+          <div id="pista-demo" class="pista" hidden>
+            <p>Para la demostración, toque un ticket de ejemplo:</p>
+            <div id="tickets-ejemplo" class="acciones"></div>
+          </div>
+
           <label for="codigo">Código del ticket</label>
           <input id="codigo" name="codigo" type="text" maxlength="24" autocomplete="off" autocapitalize="characters" required
             aria-describedby="mensaje" placeholder="Por ejemplo, A65E-D099-1E33-F00D" />

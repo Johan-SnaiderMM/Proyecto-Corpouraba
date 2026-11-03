@@ -1,4 +1,6 @@
-import { supabase } from './supabase.js';
+import { supabase, MODO_DEMO } from './supabase.js';
+import { montarBannerDemo } from './banner.js';
+import { TICKETS_EJEMPLO } from './demo.js';
 import { ESTADOS, TIPOS, fecha } from './etiquetas.js';
 import {
   armarLinea,
@@ -10,6 +12,8 @@ import {
   normalizarCodigo,
   textoEvento,
 } from './ticket.js';
+
+montarBannerDemo();
 
 const $ = (id) => document.getElementById(id);
 const mensaje = $('mensaje');
@@ -245,6 +249,22 @@ const codigoEnEnlace = codigoDeEnlace(location.hash, location.search);
 if (codigoEnEnlace) {
   $('codigo').value = formatearCodigo(codigoEnEnlace);
   consultar(codigoEnEnlace);
+}
+
+// En la demostración se ofrecen los tickets de ejemplo como botones.
+if (MODO_DEMO) {
+  $('pista-demo').hidden = false;
+  for (const { codigo, texto } of TICKETS_EJEMPLO) {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'secundario';
+    boton.textContent = texto;
+    boton.addEventListener('click', () => {
+      $('codigo').value = formatearCodigo(codigo);
+      consultar(codigo);
+    });
+    $('tickets-ejemplo').append(boton);
+  }
 }
 
 // Si se pega otro enlace de ticket en la misma pestaña (cambia solo el #), se consulta el nuevo.
